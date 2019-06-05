@@ -23,7 +23,7 @@ set(config_module_list
 	drivers/blinkm
 	drivers/camera_trigger
 	drivers/gps
-	drivers/imu/adis16448
+	#drivers/imu/adis16448
 	drivers/imu/bmi160
 	drivers/imu/l3gd20
 	drivers/imu/lsm303d
@@ -111,8 +111,8 @@ set(config_module_list
 	#
 	modules/fw_att_control
 	modules/fw_pos_control_l1
-	modules/gnd_att_control
-	modules/gnd_pos_control
+	#modules/gnd_att_control
+	#modules/gnd_pos_control
 	modules/mc_att_control
 	modules/mc_pos_control
 	modules/vtol_att_control
@@ -131,17 +131,17 @@ set(config_module_list
 	#
 	# OBC challenge
 	#
-	examples/bottle_drop
+	#examples/bottle_drop
 
 	#
 	# Rover apps
 	#
-	examples/rover_steering_control
+	#examples/rover_steering_control
 
 	#
 	# Segway
 	#
-	examples/segway
+	#examples/segway
 
 	#
 	# Demo apps
@@ -149,15 +149,15 @@ set(config_module_list
 
 	# Tutorial code from
 	# https://px4.io/dev/px4_simple_app
-	examples/px4_simple_app
+	#examples/px4_simple_app
 
 	# Tutorial code from
 	# https://px4.io/dev/debug_values
-	examples/px4_mavlink_debug
+	#examples/px4_mavlink_debug
 
 	# Tutorial code from
 	# https://px4.io/dev/example_fixedwing_control
-	examples/fixedwing_control
+	#examples/fixedwing_control
 
 	# Hardware test
 	examples/hwtest
