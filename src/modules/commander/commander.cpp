@@ -611,6 +611,15 @@ Commander::handle_command(vehicle_status_s *status_local, const vehicle_command_
 	switch (cmd.command) {
 	case vehicle_command_s::VEHICLE_CMD_DO_REPOSITION: {
 
+		if(status.nav_state==vehicle_status_s::NAVIGATION_STATE_MANUAL||
+		   status.nav_state==vehicle_status_s::NAVIGATION_STATE_STAB||
+		   status.nav_state==vehicle_status_s::NAVIGATION_STATE_POSCTL)
+		{
+			//nothing
+		}
+		else
+		{
+
 		// Just switch the flight mode here, the navigator takes care of
 		// doing something sensible with the coordinates. Its designed
 		// to not require navigator and command to receive / process
@@ -629,6 +638,7 @@ Commander::handle_command(vehicle_status_s *status_local, const vehicle_command_
 			}
 		} else {
 			cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
+		}
 		}
 	}
 	break;
