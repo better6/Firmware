@@ -611,35 +611,36 @@ Commander::handle_command(vehicle_status_s *status_local, const vehicle_command_
 	switch (cmd.command) {
 	case vehicle_command_s::VEHICLE_CMD_DO_REPOSITION: {
 
-		if(status.nav_state==vehicle_status_s::NAVIGATION_STATE_MANUAL||
-		   status.nav_state==vehicle_status_s::NAVIGATION_STATE_STAB||
-		   status.nav_state==vehicle_status_s::NAVIGATION_STATE_POSCTL)
+		if(status.nav_state==vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER ||
+		   status.nav_state==vehicle_status_s::NAVIGATION_STATE_ALTCTL ||
+		   status.nav_state==vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF)
 		{
-			//nothing
-		}
-		else
-		{
+			//只要在ALT、LOITER、TAKEOFF阶段才会响应地面站的指点飞行
+		
+			// Just switch the flight mode here, the navigator takes care of
+			// doing something sensible with the coordinates. Its designed
+			// to not require navigator and command to receive / process
+			// the data at the exact same time.
 
-		// Just switch the flight mode here, the navigator takes care of
-		// doing something sensible with the coordinates. Its designed
-		// to not require navigator and command to receive / process
-		// the data at the exact same time.
+			// Check if a mode switch had been requested
+			if ((((uint32_t)cmd.param2) & 1) > 0) {
+				transition_result_t main_ret = main_state_transition(*status_local, commander_state_s::MAIN_STATE_AUTO_LOITER, status_flags, &internal_state);
 
-		// Check if a mode switch had been requested
-		if ((((uint32_t)cmd.param2) & 1) > 0) {
-			transition_result_t main_ret = main_state_transition(*status_local, commander_state_s::MAIN_STATE_AUTO_LOITER, status_flags, &internal_state);
+				if ((main_ret != TRANSITION_DENIED)) {
+					cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
 
-			if ((main_ret != TRANSITION_DENIED)) {
-				cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
-
+				} else {
+					cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
+					mavlink_log_critical(&mavlink_log_pub, "Rejecting reposition command");
+				}
 			} else {
-				cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
-				mavlink_log_critical(&mavlink_log_pub, "Rejecting reposition command");
+				cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
 			}
-		} else {
-			cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
 		}
+		else{
+			warnx("mode =%d ignore waypoint control",status.nav_state);
 		}
+		
 	}
 	break;
 	case vehicle_command_s::VEHICLE_CMD_DO_SET_MODE: {

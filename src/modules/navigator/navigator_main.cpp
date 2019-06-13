@@ -322,15 +322,11 @@ Navigator::run()
 			} else if (cmd.command == vehicle_command_s::VEHICLE_CMD_DO_REPOSITION) {
 
 
-				if(_vstatus.nav_state==vehicle_status_s::NAVIGATION_STATE_MANUAL||
-				   _vstatus.nav_state==vehicle_status_s::NAVIGATION_STATE_STAB||
-				   _vstatus.nav_state==vehicle_status_s::NAVIGATION_STATE_POSCTL)
+				if(_vstatus.nav_state==vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER ||
+				   _vstatus.nav_state==vehicle_status_s::NAVIGATION_STATE_ALTCTL ||
+				   _vstatus.nav_state==vehicle_status_s::NAVIGATION_STATE_AUTO_TAKEOFF)
 				{
-					//nothing
-				}
-				else
-				{
-
+					
 				position_setpoint_triplet_s *rep = get_reposition_triplet();
 				position_setpoint_triplet_s *curr = get_position_setpoint_triplet();
 
@@ -388,6 +384,9 @@ Navigator::run()
 				rep->next.valid = false;
 
 				// CMD_DO_REPOSITION is acknowledged by commander
+				}
+				else{
+					warnx("mode =%d ignore waypoint control",_vstatus.nav_state);
 				}
 
 			} else if (cmd.command == vehicle_command_s::VEHICLE_CMD_NAV_TAKEOFF) {
