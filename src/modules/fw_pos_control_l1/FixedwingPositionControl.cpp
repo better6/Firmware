@@ -67,6 +67,9 @@ FixedwingPositionControl::FixedwingPositionControl() :
     _parameter_handles.pitchsp_offset_deg = param_find("FW_PSP_OFF");
 
     _parameter_handles.land_slope_angle = param_find("FW_LND_ANG");
+    _parameter_handles.land_slope_angle1 = param_find("FORMA_PARAM1");
+    _parameter_handles.land_slope_angle2 = param_find("FORMA_PARAM2");
+    _parameter_handles.land_slope_angle3 = param_find("FORMA_PARAM3");
     _parameter_handles.land_H1_virt = param_find("FW_LND_HVIRT");
     _parameter_handles.land_flare_alt_relative = param_find("FW_LND_FLALT");
     _parameter_handles.land_flare_pitch_min_deg = param_find("FW_LND_FL_PMIN");
@@ -252,6 +255,19 @@ FixedwingPositionControl::parameters_update()
 
     float land_slope_angle = 0.0f;
     param_get(_parameter_handles.land_slope_angle, &land_slope_angle);
+    
+
+        float land_slope_angle1 = 0.0f;
+    param_get(_parameter_handles.land_slope_angle1, &land_slope_angle1);
+    //warnx("---angle1=%2.1f",(double)land_slope_angle1);
+
+        float land_slope_angle2 = 0.0f;
+    param_get(_parameter_handles.land_slope_angle2, &land_slope_angle2);
+   // warnx("----angle2=%2.1f",(double)land_slope_angle2);
+
+        float land_slope_angle3 = 0.0f;
+    param_get(_parameter_handles.land_slope_angle3, &land_slope_angle3);
+   // warnx("---angle3=%2.1f",(double)land_slope_angle3);
 
     float land_flare_alt_relative = 0.0f;
     param_get(_parameter_handles.land_flare_alt_relative, &land_flare_alt_relative);
@@ -268,6 +284,9 @@ FixedwingPositionControl::parameters_update()
     }
 
     _landingslope.update(radians(land_slope_angle), land_flare_alt_relative, land_thrust_lim_alt_relative, land_H1_virt);
+
+   // mavlink_log_info(&_mavlink_log_pub,"0=%2.1f  1=%2.1f 1=%2.1f 1=%2.1f  ",(double)land_slope_angle,(double)land_slope_angle1,(double)land_slope_angle2,(double)land_slope_angle3);
+
 
 
     // Update and publish the navigation capabilities

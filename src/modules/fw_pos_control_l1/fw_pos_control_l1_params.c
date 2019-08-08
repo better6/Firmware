@@ -257,6 +257,42 @@ PARAM_DEFINE_FLOAT(FW_CLMBOUT_DIFF, 10.0f);
 PARAM_DEFINE_FLOAT(FW_LND_ANG, 5.0f);
 
 /**
+ * Landing slope angle
+ *
+ * @unit deg
+ * @min 1.0
+ * @max 15.0
+ * @decimal 1
+ * @increment 0.5
+ * @group FW L1 Control
+ */
+PARAM_DEFINE_FLOAT(FORMA_PARAM1, 5.0f);
+
+/**
+ * Landing slope angle
+ *
+ * @unit deg
+ * @min 1.0
+ * @max 15.0
+ * @decimal 1
+ * @increment 0.5
+ * @group FW L1 Control
+ */
+PARAM_DEFINE_FLOAT(FORMA_PARAM2, 5.0f);
+
+/**
+ * Landing slope angle
+ *
+ * @unit deg
+ * @min 1.0
+ * @max 15.0
+ * @decimal 1
+ * @increment 0.5
+ * @group FW L1 Control
+ */
+PARAM_DEFINE_FLOAT(FORMA_PARAM3, 5.0f);
+
+/**
  *
  *
  * @unit m

@@ -386,6 +386,9 @@ Vector2f Psp2A_offset_ned{};
 		param_t throttle_land_max;
 
 		param_t land_slope_angle;
+		param_t land_slope_angle1;
+		param_t land_slope_angle2;
+		param_t land_slope_angle3;
 		param_t land_H1_virt;
 		param_t land_flare_alt_relative;
 		param_t land_thrust_lim_alt_relative;
