@@ -2014,6 +2014,7 @@ Mavlink::task_main(int argc, char *argv[])
 
 	switch (_mode) {
 	case MAVLINK_MODE_NORMAL:
+	    //这是ttyS1就是数传1的mavlink配置
 		configure_stream("ADSB_VEHICLE");
 		configure_stream("ALTITUDE", 1.0f);
 		configure_stream("ATTITUDE", 20.0f);
@@ -2045,6 +2046,7 @@ Mavlink::task_main(int argc, char *argv[])
 		break;
 
 	case MAVLINK_MODE_ONBOARD:
+	//这是telem2的可选配置
 		configure_stream("ACTUATOR_CONTROL_TARGET0", 10.0f);
 		configure_stream("ADSB_VEHICLE");
 		configure_stream("ALTITUDE", 10.0f);
@@ -2083,6 +2085,7 @@ Mavlink::task_main(int argc, char *argv[])
 		break;
 
 	case MAVLINK_MODE_OSD:
+	//这是telem2的可选配置
 		configure_stream("ALTITUDE", 1.0f);
 		configure_stream("ATTITUDE", 25.0f);
 		configure_stream("ATTITUDE_TARGET", 10.0f);
@@ -2104,6 +2107,7 @@ Mavlink::task_main(int argc, char *argv[])
 		break;
 
 	case MAVLINK_MODE_CONFIG:
+		//这是ttyACM0就是usb的mavlink配置 就是地面站的analyze
 		// Enable a number of interesting streams we want via USB
 		configure_stream("ACTUATOR_CONTROL_TARGET0", 30.0f);
 		configure_stream("ADSB_VEHICLE");
