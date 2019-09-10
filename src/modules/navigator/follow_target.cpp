@@ -96,6 +96,7 @@ void FollowTarget::on_activation()
 	}
 }
 
+
 void FollowTarget::on_active()
 {
 	struct map_projection_reference_s target_ref;
@@ -111,7 +112,7 @@ void FollowTarget::on_active()
 	if (updated) {
 		follow_target_s target_motion;
 
-		_target_updates++;
+		_target_updates++; //follow_target主题有更新 下面就有效
 
 		// save last known motion topic
 
@@ -134,10 +135,14 @@ void FollowTarget::on_active()
 	}
 
 	// update distance to target
+	//更新到目标的距离
 
-	if (target_position_valid()) {
+	if (target_position_valid()) {//follow_target主题更新一次 就是有跟随的位置指令了 以后简称位置指令
 
 		// get distance to target
+		//得到距离目标的距离
+
+		//飞机现在的位置映射为NED原点（0，0），再把现在位置指令映射成（x，y），则（x，y）就是现在距离位置指令的距离
 
 		map_projection_init(&target_ref, _navigator->get_global_position()->lat, _navigator->get_global_position()->lon);
 		map_projection_project(&target_ref, _current_target_motion.lat, _current_target_motion.lon, &_target_distance(0),
@@ -146,14 +151,17 @@ void FollowTarget::on_active()
 	}
 
 	// update target velocity
+	//更新目标的速度 所有的目标是值跟随目标
 
-	if (target_velocity_valid() && updated) {
+	if (target_velocity_valid() && updated) {//follow_target主题更新两次 就可以求速度了
 
+		//计算出两次更新的时间间隔，用于求速度
 		dt_ms = ((_current_target_motion.timestamp - _previous_target_motion.timestamp) / 1000);
 
 		// ignore a small dt
 		if (dt_ms > 10.0F) {
 			// get last gps known reference for target
+			//把上一次的位置指令 映射成NED原点（0,0），下面再把现在的位置指令映射出来 就可以得到目标两次位置的变换 即可可以算出目标的速度
 			map_projection_init(&target_ref, _previous_target_motion.lat, _previous_target_motion.lon);
 
 			// calculate distance the target has moved
@@ -161,16 +169,19 @@ void FollowTarget::on_active()
 					       &(_target_position_delta(0)), &(_target_position_delta(1)));
 
 			// update the average velocity of the target based on the position
+			//根据上面目标两次位置的变换 计算出速度_est表示估算出来的目标速度
 			_est_target_vel = _target_position_delta / (dt_ms / 1000.0f);
 
 			// if the target is moving add an offset and rotation
+			//如果目标有速度正在移动，则添加偏移和旋转
 			if (_est_target_vel.length() > .5F) {
 				_target_position_offset = _rot_matrix * _est_target_vel.normalized() * _follow_offset;
 			}
 
 			// are we within the target acceptance radius?
-			// give a buffer to exit/enter the radius to give the velocity controller
-			// a chance to catch up
+			// give a buffer to exit/enter the radius to give the velocity controller a chance to catch up
+			//我们是否在目标接受半径范围内？
+			//给出一个缓冲区来退出/输入半径，让速度控制器有机会赶上
 
 			_radius_exited = ((_target_position_offset + _target_distance).length() > (float) TARGET_ACCEPTANCE_RADIUS_M * 1.5f);
 			_radius_entered = ((_target_position_offset + _target_distance).length() < (float) TARGET_ACCEPTANCE_RADIUS_M);
