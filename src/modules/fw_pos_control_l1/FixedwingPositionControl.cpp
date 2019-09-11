@@ -1304,7 +1304,7 @@ FixedwingPositionControl::control_follow_target(const Vector2f &nav_speed_2d,
                                                       {-2, 0}  // 4号机位置,主机后面
                                                };
 
-    float L_space(10.0f);  //编队飞机之间的间距
+    float L_space(20.0f);  //编队飞机之间的间距
 
     matrix::Vector2f L_MPtoSP = {L_space,L_space}; //从机相对主机的偏移距离向量,主机地轴航向作为x轴正方向,主机右侧是y正方向
     uint8_t sys_id = _vehicle_status.system_id;
@@ -1355,6 +1355,7 @@ FixedwingPositionControl::control_follow_target(const Vector2f &nav_speed_2d,
     }
     _form_shape_last = _form_shape_current; //记录上面状态机的值
 
+    //把两架飞机之间的水平距离转换为地理坐标系下的差距，下一步好根据这个差距计算从机的位置指令
     matrix::Vector2f L_MPtoSP_ned = bodytoNED(L_MPtoSP,MP_gndspd_ned,MP_position_filter.yaw);
 
     float L_spacePB{30.0f};//2.0f * _navigator->get_acceptance_radius());  // B点到从机目标位置的距离,默认大于L1距离
@@ -1406,6 +1407,14 @@ FixedwingPositionControl::control_follow_target(const Vector2f &nav_speed_2d,
     static follow_target_s SP_position_sp;
     static follow_target_s PB_position_sp;
     static follow_target_s PA_position_sp;
+
+    //下面这段代码主要是NED坐标系和全球坐标系之间的转换，map_projection_init函数的意思就是当前这个经度纬度视为（0,0）原点。
+    //map_projection_reproject函数在原点基础上 偏移一个（x,y）后的经度纬度是多少，这样就可以根据两个点之间地理坐标系的差距 计算出另外一个点的全球坐标系
+    //当然与之对应的 还有一个是已知B点的全球坐标系 可以映射求出B点的地理坐标系
+    //
+    //编队目的，下面已知主机和从机的地理坐标系上编队的差距，知道主机的位置 如何求从机的位置经度纬度？
+    //那就把主机位置映射成原点，加上地理坐标系上的偏移后，求出从机的经度纬度。函数重要重要是地理坐标系和全球坐标系之间的转换，主要注意的是初始化谁是原点（0,0）
+
     //初始化主机位置
     map_projection_init(&target_ref,  MP_position_filter.lat, MP_position_filter.lon);
     //计算主机时移位置
