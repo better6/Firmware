@@ -607,11 +607,11 @@ void Mavlink::mavlink_update_system()
 	 * after reboot - not during operation */
 	if (!_param_initialized) {
 		if (system_id > 0 && system_id < 255) {
-			mavlink_system.sysid = system_id;
+            mavlink_system.sysid = system_id;
 		}
 
 		if (component_id > 0 && component_id < 255) {
-			mavlink_system.compid = component_id;
+            mavlink_system.compid = component_id;
 		}
 
 		_param_initialized = true;
@@ -1994,173 +1994,145 @@ Mavlink::task_main(int argc, char *argv[])
 	_transmitting_enabled = true;
 	_transmitting_enabled_commanded = true;
 
-	if (_mode == MAVLINK_MODE_IRIDIUM) {
+    if (_mode == MAVLINK_MODE_IRIDIUM || _mode == MAVLINK_MODE_ONBOARD) { //调试,这里增加了在MAVLINK_MODE_ONBOARD模式
 		_transmitting_enabled_commanded = false;
 	}
 
 	/* add default streams depending on mode */
-	if (_mode != MAVLINK_MODE_IRIDIUM) {
+	//这是一些默认发送的mavlink消息 ，在ONBOARD模式下屏蔽发送
+    if (_mode != MAVLINK_MODE_IRIDIUM && _mode != MAVLINK_MODE_ONBOARD) { //调试,这里增加了在MAVLINK_MODE_ONBOARD模式	
 
-		/* HEARTBEAT is constant rate stream, rate never adjusted */
-		configure_stream("HEARTBEAT", 1.0f);
+        /* HEARTBEAT is constant rate stream, rate never adjusted */
+        configure_stream("HEARTBEAT", 1.0f);
 
-		/* STATUSTEXT stream is like normal stream but gets messages from logbuffer instead of uORB */
-		configure_stream("STATUSTEXT", 20.0f);
+        /* STATUSTEXT stream is like normal stream but gets messages from logbuffer instead of uORB */
+        configure_stream("STATUSTEXT", 20.0f);
 
-		/* COMMAND_LONG stream: use unlimited rate to send all commands */
-		configure_stream("COMMAND_LONG");
+        /* COMMAND_LONG stream: use unlimited rate to send all commands */
+        configure_stream("COMMAND_LONG");
 
 	}
 
 	switch (_mode) {
-	case MAVLINK_MODE_NORMAL:
-	    //这是ttyS1就是数传1的mavlink配置
-		configure_stream("ADSB_VEHICLE");
-		configure_stream("ALTITUDE", 1.0f);
-		configure_stream("ATTITUDE", 20.0f);
-		configure_stream("ATTITUDE_TARGET", 2.0f);
-		configure_stream("CAMERA_IMAGE_CAPTURED");
-		configure_stream("COLLISION");
-		configure_stream("DEBUG", 1.0f);
-		configure_stream("DEBUG_VECT", 1.0f);
-		configure_stream("DISTANCE_SENSOR", 0.5f);
-		configure_stream("ESTIMATOR_STATUS", 0.5f);
-		configure_stream("EXTENDED_SYS_STATE", 1.0f);
-		configure_stream("GLOBAL_POSITION_INT", 5.0f);
-		configure_stream("GPS_RAW_INT", 1.0f);
-		configure_stream("HIGHRES_IMU", 1.5f);
-		configure_stream("HOME_POSITION", 0.5f);
-		configure_stream("LOCAL_POSITION_NED", 1.0f);
-		configure_stream("NAMED_VALUE_FLOAT", 1.0f);
-		configure_stream("NAV_CONTROLLER_OUTPUT", 1.5f);
-		configure_stream("OPTICAL_FLOW_RAD", 1.0f);
-		configure_stream("PING", 0.1f);
-		configure_stream("POSITION_TARGET_LOCAL_NED", 1.5f);
-		configure_stream("POSITION_TARGET_GLOBAL_INT", 1.5f);
-		configure_stream("RC_CHANNELS", 5.0f);
-		configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);
-		configure_stream("SYS_STATUS", 1.0f);
-		configure_stream("VFR_HUD", 4.0f);
-		configure_stream("VISION_POSITION_ESTIMATE", 1.0f);
-		configure_stream("WIND_COV", 1.0f);
-		break;
+	//这是ttyS1就是数传1的mavlink配置，对数据进行降频
+    case MAVLINK_MODE_NORMAL:   //使用数传接到radio上时一般用这个模式
+        //这是ttyS1就是数传1的mavlink配置
+        configure_stream("ADSB_VEHICLE");
+        configure_stream("ALTITUDE", 1.0f);
+        configure_stream("ATTITUDE", 2.0f);
+        configure_stream("ATTITUDE_TARGET", 2.0f);
+        configure_stream("CAMERA_IMAGE_CAPTURED");
+        configure_stream("COLLISION");
+        configure_stream("DEBUG", 1.0f);
+        configure_stream("DEBUG_VECT", 1.0f);
+//        configure_stream("DISTANCE_SENSOR", 0.5f);
+        configure_stream("ESTIMATOR_STATUS", 0.5f);
+        configure_stream("EXTENDED_SYS_STATE", 1.0f);
+        configure_stream("GLOBAL_POSITION_INT", 1.0f);
+        configure_stream("GPS_RAW_INT", 1.0f);
+/*        configure_stream("HIGHRES_IMU", 1.5f);  */
+        configure_stream("HOME_POSITION", 0.5f);
+        configure_stream("LOCAL_POSITION_NED", 1.0f);
+        configure_stream("NAMED_VALUE_FLOAT", 1.0f);
+        configure_stream("NAV_CONTROLLER_OUTPUT", 1.0f);
+        configure_stream("OPTICAL_FLOW_RAD", 1.0f);
+        configure_stream("PING", 0.1f);
+        configure_stream("POSITION_TARGET_LOCAL_NED", 1.0f);
+        configure_stream("POSITION_TARGET_GLOBAL_INT", 1.0f);
+        configure_stream("RC_CHANNELS", 1.0f);
+        configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);
+        configure_stream("SYS_STATUS", 1.0f);
+        configure_stream("VFR_HUD", 1.0f);
+        configure_stream("VISION_POSITION_ESTIMATE", 1.0f);
+        configure_stream("WIND_COV", 0.5f);
 
-	case MAVLINK_MODE_ONBOARD:
+        break;
+
 	//这是telem2的可选配置
-		configure_stream("ACTUATOR_CONTROL_TARGET0", 10.0f);
-		configure_stream("ADSB_VEHICLE");
-		configure_stream("ALTITUDE", 10.0f);
-		configure_stream("ATTITUDE", 100.0f);
-		configure_stream("ATTITUDE_QUATERNION", 50.0f);
-		configure_stream("ATTITUDE_TARGET", 10.0f);
-		configure_stream("CAMERA_CAPTURE", 2.0f);
-		configure_stream("CAMERA_IMAGE_CAPTURED");
-		configure_stream("CAMERA_TRIGGER");
-		configure_stream("COLLISION");
-		configure_stream("DEBUG", 10.0f);
-		configure_stream("DEBUG_VECT", 10.0f);
-		configure_stream("DISTANCE_SENSOR", 10.0f);
-		configure_stream("ESTIMATOR_STATUS", 1.0f);
-		configure_stream("EXTENDED_SYS_STATE", 5.0f);
-		configure_stream("GLOBAL_POSITION_INT", 50.0f);
-		configure_stream("GPS_RAW_INT");
-		configure_stream("HIGHRES_IMU", 50.0f);
-		configure_stream("HOME_POSITION", 0.5f);
-		configure_stream("LOCAL_POSITION_NED", 30.0f);
-		configure_stream("NAMED_VALUE_FLOAT", 10.0f);
-		configure_stream("NAV_CONTROLLER_OUTPUT", 10.0f);
-		configure_stream("OPTICAL_FLOW_RAD", 10.0f);
-		configure_stream("PING", 1.0f);
-		configure_stream("POSITION_TARGET_GLOBAL_INT", 10.0f);
-		configure_stream("POSITION_TARGET_LOCAL_NED", 10.0f);
-		configure_stream("RC_CHANNELS", 20.0f);
-		configure_stream("SCALED_IMU", 50.0f);
-		configure_stream("SERVO_OUTPUT_RAW_0", 10.0f);
-		configure_stream("SYS_STATUS", 5.0f);
-		configure_stream("SYSTEM_TIME", 1.0f);
-		configure_stream("TIMESYNC", 10.0f);
-		configure_stream("VFR_HUD", 10.0f);
-		configure_stream("VISION_POSITION_ESTIMATE", 10.0f);
-		configure_stream("WIND_COV", 10.0f);
-		break;
+	//通过参数SYS_COMPANION配置成companion进入这个模式，利用这个模式以及telem2进行主从之间的通信
+    case MAVLINK_MODE_ONBOARD:  //使用companion时会进入这一模式,设置第二数传进入这个模式
+
+        configure_stream("PING", 1.0f);
+        break;
 
 	case MAVLINK_MODE_OSD:
-	//这是telem2的可选配置
-		configure_stream("ALTITUDE", 1.0f);
-		configure_stream("ATTITUDE", 25.0f);
-		configure_stream("ATTITUDE_TARGET", 10.0f);
-		configure_stream("ESTIMATOR_STATUS", 1.0f);
-		configure_stream("EXTENDED_SYS_STATE", 1.0f);
-		configure_stream("GLOBAL_POSITION_INT", 10.0f);
-		configure_stream("GPS_RAW_INT", 1.0f);
-		configure_stream("HOME_POSITION", 0.5f);
-		configure_stream("RC_CHANNELS", 5.0f);
-		configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);
-		configure_stream("SYS_STATUS", 5.0f);
-		configure_stream("SYSTEM_TIME", 1.0f);
-		configure_stream("VFR_HUD", 25.0f);
-		configure_stream("WIND_COV", 2.0f);
-		break;
+      	//这是telem2的可选配置
+        configure_stream("ALTITUDE", 1.0f);
+        configure_stream("ATTITUDE", 25.0f);
+        configure_stream("ATTITUDE_TARGET", 10.0f);
+        configure_stream("ESTIMATOR_STATUS", 1.0f);
+        configure_stream("EXTENDED_SYS_STATE", 1.0f);
+        configure_stream("GLOBAL_POSITION_INT", 10.0f);
+        configure_stream("GPS_RAW_INT", 1.0f);
+        configure_stream("HOME_POSITION", 0.5f);
+        configure_stream("RC_CHANNELS", 5.0f);
+        configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);
+        configure_stream("SYS_STATUS", 5.0f);
+        configure_stream("SYSTEM_TIME", 1.0f);
+        configure_stream("VFR_HUD", 25.0f);
+        configure_stream("WIND_COV", 2.0f);
+        break;
 
 	case MAVLINK_MODE_MAGIC:
 		//stream nothing
 		break;
 
-	case MAVLINK_MODE_CONFIG:
-		//这是ttyACM0就是usb的mavlink配置 就是地面站的analyze
-		// Enable a number of interesting streams we want via USB
-		configure_stream("ACTUATOR_CONTROL_TARGET0", 30.0f);
-		configure_stream("ADSB_VEHICLE");
-		configure_stream("ALTITUDE", 10.0f);
-		configure_stream("ATTITUDE", 50.0f);
-		configure_stream("ATTITUDE_TARGET", 8.0f);
-		configure_stream("ATTITUDE_QUATERNION", 50.0f);
-		configure_stream("CAMERA_TRIGGER");
-		configure_stream("CAMERA_IMAGE_CAPTURED");
-		configure_stream("COLLISION");
-		configure_stream("DEBUG", 50.0f);
-		configure_stream("DEBUG_VECT", 50.0f);
-		configure_stream("DISTANCE_SENSOR", 10.0f);
-		configure_stream("GPS_RAW_INT");
-		configure_stream("ESTIMATOR_STATUS", 5.0f);
-		configure_stream("EXTENDED_SYS_STATE", 2.0f);
-		configure_stream("GLOBAL_POSITION_INT", 10.0f);
-		configure_stream("HIGHRES_IMU", 50.0f);
-		configure_stream("HOME_POSITION", 0.5f);
-		configure_stream("LOCAL_POSITION_NED", 30.0f);
-		configure_stream("MANUAL_CONTROL", 5.0f);
-		configure_stream("NAMED_VALUE_FLOAT", 50.0f);
-		configure_stream("NAV_CONTROLLER_OUTPUT", 10.0f);
-		configure_stream("OPTICAL_FLOW_RAD", 10.0f);
-		configure_stream("PING", 1.0f);
-		configure_stream("POSITION_TARGET_GLOBAL_INT", 10.0f);
-		configure_stream("RC_CHANNELS", 10.0f);
-		configure_stream("SERVO_OUTPUT_RAW_0", 20.0f);
-		configure_stream("SERVO_OUTPUT_RAW_1", 20.0f);
-		configure_stream("SYS_STATUS", 1.0f);
-		configure_stream("SYSTEM_TIME", 1.0f);
-		configure_stream("TIMESYNC", 10.0f);
-		configure_stream("VFR_HUD", 20.0f);
-		configure_stream("VISION_POSITION_ESTIMATE", 10.0f);
-		configure_stream("WIND_COV", 10.0f);
-		break;
+    case MAVLINK_MODE_CONFIG:  //使用USB连接飞机时会使用这个模式
+        //这是ttyACM0就是usb的mavlink配置 就是地面站的analyze
+        // Enable a number of interesting streams we want via USB
+        configure_stream("ACTUATOR_CONTROL_TARGET0", 30.0f);
+        configure_stream("ADSB_VEHICLE");
+        configure_stream("ALTITUDE", 10.0f);
+        configure_stream("ATTITUDE", 50.0f);
+        configure_stream("ATTITUDE_TARGET", 8.0f);
+        configure_stream("ATTITUDE_QUATERNION", 50.0f);
+        configure_stream("CAMERA_TRIGGER");
+        configure_stream("CAMERA_IMAGE_CAPTURED");
+        configure_stream("COLLISION");
+        configure_stream("DEBUG", 50.0f);
+        configure_stream("DEBUG_VECT", 50.0f);
+        configure_stream("DISTANCE_SENSOR", 10.0f);
+        configure_stream("GPS_RAW_INT");
+        configure_stream("ESTIMATOR_STATUS", 5.0f);
+        configure_stream("EXTENDED_SYS_STATE", 2.0f);
+        configure_stream("GLOBAL_POSITION_INT", 10.0f);
+        configure_stream("HIGHRES_IMU", 50.0f);
+        configure_stream("HOME_POSITION", 0.5f);
+        configure_stream("LOCAL_POSITION_NED", 30.0f);
+        configure_stream("MANUAL_CONTROL", 5.0f);
+        configure_stream("NAMED_VALUE_FLOAT", 50.0f);
+        configure_stream("NAV_CONTROLLER_OUTPUT", 10.0f);
+        configure_stream("OPTICAL_FLOW_RAD", 10.0f);
+        configure_stream("PING", 1.0f);
+        configure_stream("POSITION_TARGET_GLOBAL_INT", 10.0f);
+        configure_stream("RC_CHANNELS", 10.0f);
+        configure_stream("SERVO_OUTPUT_RAW_0", 20.0f);
+        configure_stream("SERVO_OUTPUT_RAW_1", 20.0f);
+        configure_stream("SYS_STATUS", 1.0f);
+        configure_stream("SYSTEM_TIME", 1.0f);
+        configure_stream("TIMESYNC", 10.0f);
+        configure_stream("VFR_HUD", 20.0f);
+        configure_stream("VISION_POSITION_ESTIMATE", 10.0f);
+        configure_stream("WIND_COV", 10.0f);
+        break;
 
-	case MAVLINK_MODE_IRIDIUM:
+    case MAVLINK_MODE_IRIDIUM: //这个是一种特殊的数据链
 		configure_stream("HIGH_LATENCY2", 0.015f);
 		break;
 
 	case MAVLINK_MODE_MINIMAL:
-		configure_stream("ALTITUDE", 0.5f);
-		configure_stream("ATTITUDE", 10.0f);
-		configure_stream("EXTENDED_SYS_STATE", 0.1f);
-		configure_stream("GPS_RAW_INT", 0.5f);
-		configure_stream("GLOBAL_POSITION_INT", 5.0f);
-		configure_stream("HOME_POSITION", 0.1f);
-		configure_stream("NAMED_VALUE_FLOAT", 1.0f);
-		configure_stream("RC_CHANNELS", 0.5f);
-		configure_stream("SYS_STATUS", 0.1f);
-		configure_stream("VFR_HUD", 1.0f);
-		break;
+        printf("MAVLINK_MODE_MINIMAL \n");
+        configure_stream("ALTITUDE", 0.5f);
+        configure_stream("ATTITUDE", 10.0f);
+        configure_stream("EXTENDED_SYS_STATE", 0.1f);
+        configure_stream("GPS_RAW_INT", 0.5f);
+        configure_stream("GLOBAL_POSITION_INT", 5.0f);
+        configure_stream("HOME_POSITION", 0.1f);
+        configure_stream("NAMED_VALUE_FLOAT", 1.0f);
+        configure_stream("RC_CHANNELS", 0.5f);
+        configure_stream("SYS_STATUS", 0.1f);
+        configure_stream("VFR_HUD", 1.0f);
+        break;
 
 	default:
 		break;
@@ -2295,10 +2267,10 @@ Mavlink::task_main(int argc, char *argv[])
 				current_command_ack = command_ack.command;
 
 				// TODO: always transmit the acknowledge once it is only sent over the instance the command is received
-				//bool _transmitting_enabled_temp = _transmitting_enabled;
-				//_transmitting_enabled = true;
-				mavlink_msg_command_ack_send_struct(get_channel(), &msg);
-				//_transmitting_enabled = _transmitting_enabled_temp;
+
+                if(_mode != Mavlink::MAVLINK_MODE_ONBOARD){ //调试,这一句用来禁止下面这个在onboard模式上发送
+                    mavlink_msg_command_ack_send_struct(get_channel(), &msg);
+                }
 			}
 		}
 
