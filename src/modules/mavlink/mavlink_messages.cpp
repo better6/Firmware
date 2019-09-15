@@ -4187,50 +4187,56 @@ protected:
 
     bool send(const hrt_abstime t)       
     {
-        // bool updated = false;
+        bool updated = false;
 
+		//订阅vehicle_status msg消息，从此消息中可以判断飞机的SYS_ID  status.system_id
+        vehicle_status_s status = {}; 
+        _vehicle_status_sub->update(&status);
 
-        // vehicle_status_s status = {};
-        // _vehicle_status_sub->update(&status);
-       // if(status.system_id==mainplaneID) {
+		 mavlink_follow_target_t msg = {};
 
-            //            PX4_INFO("status.system_id: %d ",status.system_id);
-            //ID为1说明是主机,不是主机时不发送编队信息
+       if(status.system_id==1) {  //ID为1说明是主机,如果是主机发送编队信息
+	
+			// //验证消息发送成功
+			// msg.lat = 11;
+            // msg.lon =22;
+            // msg.alt =33.0f;
+			// mavlink_msg_follow_target_send_struct(_mavlink->get_channel(), &msg);
+			// return true;
 
-            mavlink_follow_target_t msg = {};
-			
-			msg.lat = 11;
-            msg.lon =22;
-            msg.alt =33.0f;
-			mavlink_msg_follow_target_send_struct(_mavlink->get_channel(), &msg);
+			//订阅全球位置坐标
+            vehicle_global_position_s globalpos = {};
+            vehicle_gps_position_s gpspos = {};
+
+			if (_globalpos_sub->update(&globalpos)) 
+			{
+                updated = true;
+
+				_gpspos_sub->update(&gpspos);
+               //这里暂不使用global定位的时间,因为global时间会受其他传感器的融合状态影响
+				 msg.timestamp = gpspos.time_utc_usec; //+ (globalpos.timestamp - gpspos.timestamp);  //传递主机GPS数据的UTC时间
+
+				//整理主机的实际位置/速度/偏航角,作为从机目标位置的依据
+                msg.lat = globalpos.lat;
+                msg.lon = globalpos.lon;
+                msg.alt = globalpos.alt;
+    		}
+
+            if(updated){
+                mavlink_msg_follow_target_send_struct(_mavlink->get_channel(), &msg);
+            }
+
+			return updated;
+        }
+		else{//如果是从机 可以发送其他信息 用于主从之间的通信，但是在mavlink_receiver.cpp里需要写相应的解析程序，目前解析程序里只解析了经度纬度高度
+
+			// msg.lat = 11;
+            // msg.lon =22;
+            // msg.alt =33.0f;
+			// mavlink_msg_follow_target_send_struct(_mavlink->get_channel(), &msg);
 			return true;
-
-
-			
-
-
-    //         vehicle_global_position_s globalpos = {};
-    //         vehicle_gps_position_s gpspos = {};
-
-    //         if (_gpspos_sub->update(&gpspos)) {
-    //             _globalpos_sub->update(&globalpos);
-    //             updated = true;
-    //             //这里暂不使用global定位的时间,因为global时间会受其他传感器的融合状态影响
-    //             msg.timestamp = gpspos.time_utc_usec ;//+ (globalpos.timestamp - gpspos.timestamp);  //传递主机GPS数据的UTC时间
-
-    //             //整理主机的实际位置/速度/偏航角,作为从机目标位置的依据
-    //             msg.lat = gpspos.lat;
-    //             msg.lon = gpspos.lon;
-    //             msg.alt = globalpos.alt;
-              
-
-    //         }
-
-    //         if(updated){
-    //             mavlink_msg_follow_target_send(_mavlink->get_channel(), &msg);
-    //         }
-    //    // }
-    //     return updated;
+		}
+        
     }
 };
 
