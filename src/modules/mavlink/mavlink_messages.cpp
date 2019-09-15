@@ -4122,6 +4122,121 @@ protected:
 	}
 };
 
+
+
+//添加FOLLOW_TARGET mavlink消息用于发送编队信息
+
+
+class MavlinkStreamFollowTarget : public MavlinkStream
+{
+public:
+    const char *get_name() const
+    {
+        return MavlinkStreamFollowTarget::get_name_static();
+    }
+
+    static const char *get_name_static()
+    {
+        return "FOLLOW_TARGET";
+    }
+
+    static uint16_t get_id_static()
+    {
+        return MAVLINK_MSG_ID_FOLLOW_TARGET;
+    }
+
+    uint16_t get_id()
+    {
+        return get_id_static();
+    }
+
+    static MavlinkStream *new_instance(Mavlink *mavlink)
+    {
+        return new MavlinkStreamFollowTarget(mavlink);
+    }
+
+    unsigned get_size()
+    {
+        return MAVLINK_MSG_ID_FOLLOW_TARGET_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES;
+    }
+
+	bool const_rate()
+	{
+		return true;
+	}
+
+private:
+    MavlinkOrbSubscription *_vehicle_status_sub;
+    MavlinkOrbSubscription *_globalpos_sub;
+    MavlinkOrbSubscription *_gpspos_sub;
+
+
+    uint32_t _sequence;
+
+    /* do not allow top copying this class */
+    MavlinkStreamFollowTarget(MavlinkStreamFollowTarget &) = delete;
+    MavlinkStreamFollowTarget &operator = (const MavlinkStreamFollowTarget &) = delete;
+
+protected:
+    explicit MavlinkStreamFollowTarget(Mavlink *mavlink) : MavlinkStream(mavlink),
+        _vehicle_status_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_status))),
+        _globalpos_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_global_position))),
+        _gpspos_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_gps_position))),
+        _sequence(0)
+    {}
+
+    bool send(const hrt_abstime t)       
+    {
+        // bool updated = false;
+
+
+        // vehicle_status_s status = {};
+        // _vehicle_status_sub->update(&status);
+       // if(status.system_id==mainplaneID) {
+
+            //            PX4_INFO("status.system_id: %d ",status.system_id);
+            //ID为1说明是主机,不是主机时不发送编队信息
+
+            mavlink_follow_target_t msg = {};
+			
+			msg.lat = 11;
+            msg.lon =22;
+            msg.alt =33.0f;
+			mavlink_msg_follow_target_send_struct(_mavlink->get_channel(), &msg);
+			return true;
+
+
+			
+
+
+    //         vehicle_global_position_s globalpos = {};
+    //         vehicle_gps_position_s gpspos = {};
+
+    //         if (_gpspos_sub->update(&gpspos)) {
+    //             _globalpos_sub->update(&globalpos);
+    //             updated = true;
+    //             //这里暂不使用global定位的时间,因为global时间会受其他传感器的融合状态影响
+    //             msg.timestamp = gpspos.time_utc_usec ;//+ (globalpos.timestamp - gpspos.timestamp);  //传递主机GPS数据的UTC时间
+
+    //             //整理主机的实际位置/速度/偏航角,作为从机目标位置的依据
+    //             msg.lat = gpspos.lat;
+    //             msg.lon = gpspos.lon;
+    //             msg.alt = globalpos.alt;
+              
+
+    //         }
+
+    //         if(updated){
+    //             mavlink_msg_follow_target_send(_mavlink->get_channel(), &msg);
+    //         }
+    //    // }
+    //     return updated;
+    }
+};
+
+
+
+
 static const StreamListItem streams_list[] = {
 	StreamListItem(&MavlinkStreamHeartbeat::new_instance, &MavlinkStreamHeartbeat::get_name_static, &MavlinkStreamHeartbeat::get_id_static),
 	StreamListItem(&MavlinkStreamStatustext::new_instance, &MavlinkStreamStatustext::get_name_static, &MavlinkStreamStatustext::get_id_static),
@@ -4173,7 +4288,8 @@ static const StreamListItem streams_list[] = {
 	StreamListItem(&MavlinkStreamMountOrientation::new_instance, &MavlinkStreamMountOrientation::get_name_static, &MavlinkStreamMountOrientation::get_id_static),
 	StreamListItem(&MavlinkStreamHighLatency2::new_instance, &MavlinkStreamHighLatency2::get_name_static, &MavlinkStreamHighLatency2::get_id_static),
 	StreamListItem(&MavlinkStreamGroundTruth::new_instance, &MavlinkStreamGroundTruth::get_name_static, &MavlinkStreamGroundTruth::get_id_static),
-	StreamListItem(&MavlinkStreamPing::new_instance, &MavlinkStreamPing::get_name_static, &MavlinkStreamPing::get_id_static)
+	StreamListItem(&MavlinkStreamPing::new_instance, &MavlinkStreamPing::get_name_static, &MavlinkStreamPing::get_id_static),
+	StreamListItem(&MavlinkStreamFollowTarget::new_instance, &MavlinkStreamFollowTarget::get_name_static, &MavlinkStreamFollowTarget::get_id_static)
 };
 
 const char *get_stream_name(const uint16_t msg_id)
