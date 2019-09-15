@@ -44,18 +44,18 @@
  */
 
 /**
- * Minimum follow target altitude
+ * Minimum follow target altitude 
  *
  * The minimum height in meters relative to home for following a target
  *
  * @unit meters
- * @min 8.0
+ * @min 5.0
  * @group Follow target
  */
-PARAM_DEFINE_FLOAT(NAV_MIN_FT_HT, 8.0f);
+PARAM_DEFINE_FLOAT(NAV_MIN_FT_HT, 5.0f);  //跟随目标的最低高度，单位米
 
 /**
- * Distance to follow target from
+ * Distance to follow target from 
  *
  * The distance in meters to follow the target at
  *
@@ -63,7 +63,7 @@ PARAM_DEFINE_FLOAT(NAV_MIN_FT_HT, 8.0f);
  * @min 1.0
  * @group Follow target
  */
-PARAM_DEFINE_FLOAT(NAV_FT_DST, 8.0f);
+PARAM_DEFINE_FLOAT(NAV_FT_DST, 10.0f); //跟随目标的距离，单位米
 
 /**
  * Side to follow target from
@@ -75,7 +75,7 @@ PARAM_DEFINE_FLOAT(NAV_FT_DST, 8.0f);
  * @max 3
  * @group Follow target
  */
-PARAM_DEFINE_INT32(NAV_FT_FS, 1);
+PARAM_DEFINE_INT32(NAV_FT_FS, 1); //从哪个侧面跟随目标 右面、后面、前面、前左，可以测试下效果
 
 /**
  * Dynamic filtering algorithm responsiveness to target movement
@@ -88,5 +88,5 @@ PARAM_DEFINE_INT32(NAV_FT_FS, 1);
  * @decimal 2
  * @group Follow target
  */
-PARAM_DEFINE_FLOAT(NAV_FT_RS, 0.5f);
+PARAM_DEFINE_FLOAT(NAV_FT_RS, 0.5f); //滤波算法
 

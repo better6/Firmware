@@ -79,14 +79,16 @@ void FollowTarget::on_inactive()
 
 void FollowTarget::on_activation()
 {
+	//跟随目标的距离参数
 	_follow_offset = _param_tracking_dist.get() < 1.0F ? 1.0F : _param_tracking_dist.get();
 
 	_responsiveness = math::constrain((float) _param_tracking_resp.get(), .1F, 1.0F);
 
+	//从哪个侧面跟随目标
 	_follow_target_position = _param_tracking_side.get();
 
 	if ((_follow_target_position > FOLLOW_FROM_LEFT) || (_follow_target_position < FOLLOW_FROM_RIGHT)) {
-		_follow_target_position = FOLLOW_FROM_BEHIND;
+		_follow_target_position = FOLLOW_FROM_BEHIND;//目前只能跟随后面
 	}
 
 	_rot_matrix = (_follow_position_matricies[_follow_target_position]);

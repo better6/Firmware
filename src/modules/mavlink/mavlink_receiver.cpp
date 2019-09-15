@@ -297,6 +297,7 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 		break;
 
 	case MAVLINK_MSG_ID_FOLLOW_TARGET:
+		//接受mavlink消息 FOLLOW_TARGET，并进行跟随。
 		handle_message_follow_target(msg);
 		break;
 
@@ -2091,6 +2092,11 @@ void MavlinkReceiver::handle_message_follow_target(mavlink_message_t *msg)
 	follow_target_topic.lat = follow_target_msg.lat * 1e-7;
 	follow_target_topic.lon = follow_target_msg.lon * 1e-7;
 	follow_target_topic.alt = follow_target_msg.alt;
+
+	//如果切换到follow_target模式，外部只需要通过FOLLOW_TARGET消息发送经度纬度高度数据即可。
+	//这个消息里还有很多其他数据还没使用。
+	//ORB_ID(follow_target)谁在用，只有一处在用follow_target.cpp在用，就是follow_target飞行模式在用。
+	//在follow_target.cpp中再次封装成pos_sp_triple->cyrrent传送给位置控制进行实现，同时传给位置控制的还有航点类型SETPOINT_TYPE_FOLLOW_TARGET，后续就是位置控制实现跟随了
 
 	if (_follow_target_pub == nullptr) {
 		_follow_target_pub = orb_advertise(ORB_ID(follow_target), &follow_target_topic);
