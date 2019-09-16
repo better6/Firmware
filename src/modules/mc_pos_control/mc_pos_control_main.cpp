@@ -1415,6 +1415,7 @@ MulticopterPositionControl::control_non_manual()
 			      _pos_sp_triplet.current.velocity_valid;
 
 	// do not go slower than the follow target velocity when position tracking is active (set to valid)
+	//可全局搜索Follow_TARGET 六
 	if (_pos_sp_triplet.current.type == position_setpoint_s::SETPOINT_TYPE_FOLLOW_TARGET &&
 	    velocity_valid &&
 	    _pos_sp_triplet.current.position_valid) {

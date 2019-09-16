@@ -2092,6 +2092,7 @@ void MavlinkReceiver::handle_message_follow_target(mavlink_message_t *msg)
 	follow_target_topic.timestamp = hrt_absolute_time();
 
 	//这里对接收到的经度纬度数据乘以10的-7次方，高度数据不变，就以此为准。
+	//发送的时候乘以了10的7次方，这里再缩放回去，原因没细究
 	follow_target_topic.lat = follow_target_msg.lat * 1e-7;
 	follow_target_topic.lon = follow_target_msg.lon * 1e-7;
 	follow_target_topic.alt = follow_target_msg.alt;

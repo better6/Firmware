@@ -88,5 +88,5 @@ PARAM_DEFINE_INT32(NAV_FT_FS, 1); //从哪个侧面跟随目标 右面、后面�
  * @decimal 2
  * @group Follow target
  */
-PARAM_DEFINE_FLOAT(NAV_FT_RS, 0.5f); //滤波算法
+PARAM_DEFINE_FLOAT(NAV_FT_RS, 0.3f); //滤波算法 上次位置指令权重+本次位置指令×（1-权重），对主机发给从机的位置指令进行滤波，避免变化剧烈，因为我们这主机更新频率慢 所以滤波可以不做
 
