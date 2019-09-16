@@ -4217,9 +4217,19 @@ protected:
 				 msg.timestamp = gpspos.time_utc_usec; //+ (globalpos.timestamp - gpspos.timestamp);  //传递主机GPS数据的UTC时间
 
 				//整理主机的实际位置/速度/偏航角,作为从机目标位置的依据
-                msg.lat = globalpos.lat;
-                msg.lon = globalpos.lon;
-                msg.alt = globalpos.alt;
+				//采用主机gps位置作为从机跟随的依据，实际测试是可行的，但是gps位置容易波动，尤其z轴数据变化比较大。
+                // msg.lat = gpspos.lat;
+                // msg.lon = gpspos.lon;
+                // msg.alt = gpspos.alt;
+
+				//采用主机global position位置作为从机跟随的依据。
+				//为什么需要乘以，因为根据两个msg消息vehicl_gps_position,vehilce_global_position中的经度纬度乘以了10的-7次方，
+				//两个msg消息中精度维度稳定性差不多，只是乘以的问题。高度数据global_position中高度数据更为准确，应该是气压计融合的原因。
+				msg.lat = globalpos.lat*10000000;
+                msg.lon = globalpos.lon*10000000;
+                msg.alt = gpspos.alt*1000;
+
+
     		}
 
             if(updated){
