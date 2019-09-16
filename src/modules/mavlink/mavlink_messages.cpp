@@ -4214,22 +4214,40 @@ protected:
 
 				_gpspos_sub->update(&gpspos);
                //这里暂不使用global定位的时间,因为global时间会受其他传感器的融合状态影响
-				 msg.timestamp = gpspos.time_utc_usec; //+ (globalpos.timestamp - gpspos.timestamp);  //传递主机GPS数据的UTC时间
+				 msg.timestamp =hrt_absolute_time();; //+ (globalpos.timestamp - gpspos.timestamp);  //传递主机GPS数据的UTC时间
 
-				//整理主机的实际位置/速度/偏航角,作为从机目标位置的依据
-				//采用主机gps位置作为从机跟随的依据，实际测试是可行的，但是gps位置容易波动，尤其z轴数据变化比较大。
+				// 整理主机的实际位置/速度/偏航角,作为从机目标位置的依据
+				// 采用主机gps位置作为从机跟随的依据，实际测试是可行的，但是gps位置容易波动，尤其z轴数据变化比较大。
+				// int32 lat # Latitude in 1E-7 degrees
+				// int32 lon # Longitude in 1E-7 degrees 
+				// int32 alt # Altitude in 1E-3 meters above MSL, (millimetres)
+
                 // msg.lat = gpspos.lat;
                 // msg.lon = gpspos.lon;
                 // msg.alt = gpspos.alt;
 
+
+				static int i=0;
+				i++;
+				if(i>1000) i=0;
+
+				msg.acc[0]=i;
+				msg.acc[1]=i;
+				msg.acc[2]=i;
+
+
 				//采用主机global position位置作为从机跟随的依据。
 				//为什么需要乘以，因为根据两个msg消息vehicl_gps_position,vehilce_global_position中的经度纬度乘以了10的-7次方，
 				//两个msg消息中精度维度稳定性差不多，只是乘以的问题。高度数据global_position中高度数据更为准确，应该是气压计融合的原因。
-				msg.lat = globalpos.lat*10000000;
-                msg.lon = globalpos.lon*10000000;
-                msg.alt = gpspos.alt*1000;
+				// float64 lat	# Latitude, (degrees)
+				// float64 lon	# Longitude, (degrees)
+				// float32 alt	# Altitude AMSL, (meters)
 
+				msg.lat =globalpos.lat*10000000;
+                msg.lon =globalpos.lon*10000000;
+                msg.alt =gpspos.alt*1000;
 
+				//可全局搜索Follow_TARGET 一，主机发送位置数据，下面还有streams_list发送列表关于这些mavlink消息的发送不再累述
     		}
 
             if(updated){

@@ -296,6 +296,7 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 		handle_message_distance_sensor(msg);
 		break;
 
+	//可全局搜索Follow_TARGET 二，从机接受主机位置数据，此时从机切入follow_target模式 从机便会以此位置数据作为期望的位置，这部分处理在模式.cpp文件中处理
 	case MAVLINK_MSG_ID_FOLLOW_TARGET:
 		//接受mavlink消息 FOLLOW_TARGET，并进行跟随。
 		handle_message_follow_target(msg);
@@ -2080,6 +2081,7 @@ MavlinkReceiver::handle_message_hil_gps(mavlink_message_t *msg)
 	}
 }
 
+//可全局搜索Follow_TARGET 三，把主机位置数据包装到ORB_ID(follow_target)主题信息中进行传递
 void MavlinkReceiver::handle_message_follow_target(mavlink_message_t *msg)
 {
 	mavlink_follow_target_t follow_target_msg;
@@ -2089,6 +2091,7 @@ void MavlinkReceiver::handle_message_follow_target(mavlink_message_t *msg)
 
 	follow_target_topic.timestamp = hrt_absolute_time();
 
+	//这里对接收到的经度纬度数据乘以10的-7次方，高度数据不变，就以此为准。
 	follow_target_topic.lat = follow_target_msg.lat * 1e-7;
 	follow_target_topic.lon = follow_target_msg.lon * 1e-7;
 	follow_target_topic.alt = follow_target_msg.alt;
