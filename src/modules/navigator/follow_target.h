@@ -85,8 +85,10 @@ private:
 	static constexpr float _follow_position_matricies[4][9] = {
 		{ 1.0F, -1.0F, 0.0F,  1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // follow right
 		{-1.0F,  0.0F, 0.0F,  0.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // follow behind
-		{ 1.0F,  0.0F, 0.0F,  0.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // follow front
-		{ 1.0F,  1.0F, 0.0F, -1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}  // follow left side
+		{-1.0F, -1.0F, 0.0F, -1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // right behind
+		{-1.0F, -1.0F, 0.0F,  1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // left behind
+		// { 1.0F,  0.0F, 0.0F,  0.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // follow front
+		// { 1.0F,  1.0F, 0.0F, -1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}  // follow left side
 	};
 
 	DEFINE_PARAMETERS(
@@ -95,7 +97,7 @@ private:
 		(ParamInt<px4::params::NAV_FT_FS>) _param_tracking_side,
 		(ParamFloat<px4::params::NAV_FT_RS>) _param_tracking_resp
 	)
-
+	
 	FollowTargetState _follow_target_state{SET_WAIT_FOR_TARGET_POSITION};
 	int _follow_target_position{FOLLOW_FROM_BEHIND};
 

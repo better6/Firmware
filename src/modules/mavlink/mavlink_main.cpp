@@ -2053,7 +2053,7 @@ Mavlink::task_main(int argc, char *argv[])
     case MAVLINK_MODE_ONBOARD:  //使用companion时会进入这一模式,设置第二数传进入这个模式
 
         configure_stream("PING", 1.0f);
-	configure_stream("FOLLOW_TARGET", 20.0f);
+		configure_stream("FOLLOW_TARGET", 50.0f);
         break;
 
 	case MAVLINK_MODE_OSD:

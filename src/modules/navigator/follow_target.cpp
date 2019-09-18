@@ -108,6 +108,10 @@ void FollowTarget::on_activation()
 //update_position_sp函数中_mission_item赋值给pos_sp_triplet->current，并且还赋值几个重要的标志位 航点类型SETPOINT_TYPE_FOLLOW_TARGET position_valid  velocity_valid
 //这个主题和这三个标志位都会传递到位置控制中使用实现具体的控制，怎么使用的可以去看mc_pso_control.cpp，看看位置跟随 速度跟随在哪里具体怎么实现的
 
+//位置传递的过程
+//vehicle_global_position 到 mavlink消息FOLLOW_TARGET发送出去 到接收到解析为主题消息follow_target 到封装为pos_sp_triple->cucurrent传递给位置控制 位置控制会将经度纬度转换为local本地坐标系
+//中间涉及本身的位置解算global gps  local   
+
 
 void FollowTarget::on_active()
 {
