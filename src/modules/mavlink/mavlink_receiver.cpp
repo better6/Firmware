@@ -2508,6 +2508,7 @@ void MavlinkReceiver::handle_message_formation_type(mavlink_message_t *msg)
 		vcmd.source_component = 255;
 		vcmd.confirmation = 1;	
 	}
+	
 
 
 	// warnx("target_id=%d",type_msg.target_id);
