@@ -349,6 +349,27 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 	case MAVLINK_MSG_ID_DEBUG_VECT:
 		handle_message_debug_vect(msg);
 		break;
+	
+//下面都是自己定义的MAVLINK消息了
+	//处理红杏地面站发给我的编队信息
+	case MAVLINK_MSG_ID_FORMATION_TYPE:
+        handle_message_formation_type(msg);
+        break;
+
+	//这是红杏地面站发给我的故障设置
+	case MAVLINK_MSG_ID_FAULT_COMMAND:
+        handle_message_fault_command(msg);
+        break;		
+
+	//这是主机发给从机的跟随目标位置，相比Follow_target数据有精简
+	case MAVLINK_MSG_ID_FOLLOW_ME:
+        handle_message_follow_me(msg);
+        break;		
+
+	//增加用于后期通信扩展的
+	case MAVLINK_MSG_ID_LETTER:
+        handle_message_letter(msg);
+        break;		
 
 	default:
 		break;
@@ -2459,6 +2480,69 @@ void MavlinkReceiver::handle_message_debug_vect(mavlink_message_t *msg)
 	} else {
 		orb_publish(ORB_ID(debug_vect), _debug_vect_pub, &debug_topic);
 	}
+}
+
+//增加的自定义mavlink数据接收
+void MavlinkReceiver::handle_message_formation_type(mavlink_message_t *msg)
+{
+	mavlink_formation_type_t  type_msg;
+	mavlink_msg_formation_type_decode(msg, &type_msg);	
+
+	struct vehicle_command_s vcmd={};
+	bool pub=false;
+
+	if(type_msg.start_end==1){
+		pub=true;
+
+		vcmd.param1 = 213;
+		vcmd.param2 = 7; //STAB
+		vcmd.param3 = 0;	//
+		vcmd.param4 = 0;
+		vcmd.param5 = 0;
+		vcmd.param6 = 0;
+		vcmd.param7 = 0;
+		vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
+		vcmd.target_system = 1;
+		vcmd.target_component = 0;
+		vcmd.source_system = 255;
+		vcmd.source_component = 255;
+		vcmd.confirmation = 1;	
+	}
+
+
+	// warnx("target_id=%d",type_msg.target_id);
+	// warnx("type=%d",type_msg.formation_type);
+	// warnx("start=%d",type_msg.start_end);
+	// warnx("unused=%d",type_msg.unused);
+
+	if(pub){ //需要发布的时候才发布 不会随便发布
+
+		if (_cmd_pub == nullptr) {
+			_cmd_pub = orb_advertise_queue(ORB_ID(vehicle_command), &vcmd, vehicle_command_s::ORB_QUEUE_LENGTH);
+
+		} else {
+			orb_publish(ORB_ID(vehicle_command), _cmd_pub, &vcmd);
+		}
+	}
+
+}
+
+//增加的自定义mavlink数据接收
+void MavlinkReceiver::handle_message_fault_command(mavlink_message_t *msg)
+{
+
+}
+
+//增加的自定义mavlink数据接收
+void MavlinkReceiver::handle_message_follow_me(mavlink_message_t *msg)
+{
+
+}
+
+//增加的自定义mavlink数据接收
+void MavlinkReceiver::handle_message_letter(mavlink_message_t *msg)
+{
+
 }
 
 /**

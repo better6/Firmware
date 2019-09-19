@@ -161,6 +161,12 @@ private:
 	void handle_message_debug(mavlink_message_t *msg);
 	void handle_message_debug_vect(mavlink_message_t *msg);
 
+	//增加的自定义mavlink数据
+	void handle_message_formation_type(mavlink_message_t *msg);
+	void handle_message_fault_command(mavlink_message_t *msg);
+	void handle_message_follow_me(mavlink_message_t *msg);
+	void handle_message_letter(mavlink_message_t *msg);
+
 	void *receive_thread(void *arg);
 
 	/**
