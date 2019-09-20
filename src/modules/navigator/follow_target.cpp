@@ -67,7 +67,7 @@ FollowTarget::FollowTarget(Navigator *navigator) :
 	_current_vel.zero();
 	_step_vel.zero();
 	_est_target_vel.zero();
-	_target_distance.zero();
+	_slave_master_dis.zero();
 	_target_position_offset.zero();
 	_target_position_delta.zero();
 }
@@ -90,9 +90,10 @@ void FollowTarget::on_activation()
 
 	//设置从机侧面跟随的位置，如果参数大于4或者小于0 那就是参数设置出错 则默认设置为跟随后面
 	// if ((_param_follow_side > FOLLOW_FROM_LEFT) || (_param_follow_side < FOLLOW_FROM_RIGHT)) {
-	// 	_param_follow_side = FOLLOW_FROM_BEHIND;//目前只能跟随后面
+	// 	_param_follow_side = FOLLOW_FROM_BEHIND;
 	// }
 
+	//跟随方位的旋转矩阵怎么用，还不清楚
 	_rot_matrix = (_follow_position_matricies[_param_follow_side]);
 
 	if (_follow_target_sub < 0) {
@@ -117,7 +118,7 @@ void FollowTarget::on_activation()
 void FollowTarget::on_active()
 {
 	struct map_projection_reference_s target_ref;
-	follow_target_s target_motion_with_offset = {};
+	follow_target_s slave_target_pos = {};
 	uint64_t current_time = hrt_absolute_time();
 	bool _radius_entered = false;
 	bool _radius_exited = false;
@@ -168,8 +169,8 @@ void FollowTarget::on_active()
 		//飞机现在的位置映射为NED原点（0，0），再把现在位置指令映射成（x，y），则（x，y）就是现在距离目标的距离
 
 		map_projection_init(&target_ref, _navigator->get_global_position()->lat, _navigator->get_global_position()->lon);
-		map_projection_project(&target_ref, _current_target_motion.lat, _current_target_motion.lon, &_target_distance(0),
-				       &_target_distance(1));
+		map_projection_project(&target_ref, _current_target_motion.lat, _current_target_motion.lon, &_slave_master_dis(0),
+				       &_slave_master_dis(1));
 
 	}
 
@@ -194,6 +195,7 @@ void FollowTarget::on_active()
 			//根据上面目标两次位置的变换 计算出速度_est表示估算出来的目标速度
 			_est_target_vel = _target_position_delta / (dt_ms / 1000.0f);
 
+//4.当目标有速度时 从机开始找方位跟随
 
 			// if the target is moving add an offset and rotation
 			//如果目标有速度正在移动，则添加偏移和旋转，这个偏移和旋转指什么，要解决什么问题，前馈目标的位置？
@@ -211,8 +213,8 @@ void FollowTarget::on_active()
 			//给出一个缓冲区来退出/输入半径，让速度控制器有机会赶上
 
 			//当前飞机距离目标的距离+要和目标保持的参数距离<5米，已经“近身了”
-			_radius_exited = ((_target_position_offset + _target_distance).length() > (float) TARGET_ACCEPTANCE_RADIUS_M * 1.5f);
-			_radius_entered = ((_target_position_offset + _target_distance).length() < (float) TARGET_ACCEPTANCE_RADIUS_M);
+			_radius_exited = ((_target_position_offset + _slave_master_dis).length() > (float) TARGET_ACCEPTANCE_RADIUS_M * 1.5f);
+			_radius_entered = ((_target_position_offset + _slave_master_dis).length() < (float) TARGET_ACCEPTANCE_RADIUS_M);
 
 			// to keep the velocity increase/decrease smooth      保持速度的平滑
 			// calculate how many velocity increments/decrements  计算速度增量
@@ -223,14 +225,14 @@ void FollowTarget::on_active()
 			// just traveling at the exact velocity of the target will not
 			// get any closer or farther from the target
 
-			_step_vel = (_est_target_vel - _current_vel) + (_target_position_offset + _target_distance) * FF_K;
+			_step_vel = (_est_target_vel - _current_vel) + (_target_position_offset + _slave_master_dis) * FF_K;
 			_step_vel /= (dt_ms / 1000.0F * (float) INTERPOLATION_PNTS);
 			_step_time_in_ms = (dt_ms / (float) INTERPOLATION_PNTS);
 
 			// if we are less than 1 meter from the target don't worry about trying to yaw
 			// lock the yaw until we are at a distance that makes sense
 
-			if ((_target_distance).length() > 1.0F) {
+			if ((_slave_master_dis).length() > 1.0F) {
 
 				// yaw rate smoothing
 
@@ -257,10 +259,10 @@ void FollowTarget::on_active()
 
 		// get the target position using the calculated offset
 
-		//根据目标的位置指令 以及从机跟随的参数 计算出从机真实应该飞往的位置
+		//根据目标的位置指令 以及从机跟随的参数 计算出从机真实应该飞往的目标位置
 		map_projection_init(&target_ref,  _current_target_motion.lat, _current_target_motion.lon);
 		map_projection_reproject(&target_ref, _target_position_offset(0), _target_position_offset(1),
-					 &target_motion_with_offset.lat, &target_motion_with_offset.lon);
+					 &slave_target_pos.lat, &slave_target_pos.lon);
 	}
 
 	// clamp yaw rate smoothing if we are with in
@@ -287,7 +289,7 @@ void FollowTarget::on_active()
 			else if (target_velocity_valid()) {
 
 				////////开始跟随目标位置。跟随的位置是带有“距离参数”的位置target_motion_with_offset
-				set_follow_target_item(&_mission_item, _param_min_alt.get(), target_motion_with_offset, _yaw_angle);
+				set_follow_target_item(&_mission_item, _param_min_alt.get(), slave_target_pos, _yaw_angle);
 				// keep the current velocity updated with the target velocity for when it's needed
 				_current_vel = _est_target_vel;
 				
@@ -315,7 +317,7 @@ void FollowTarget::on_active()
 					_last_update_time = current_time;
 				}
 
-				set_follow_target_item(&_mission_item, _param_min_alt.get(), target_motion_with_offset, _yaw_angle);
+				set_follow_target_item(&_mission_item, _param_min_alt.get(), slave_target_pos, _yaw_angle);
 				//使用速度 位置无效
 				update_position_sp(true, false, _yaw_rate);
 
@@ -398,7 +400,7 @@ void FollowTarget::reset_target_validity()
 	_current_vel.zero();
 	_step_vel.zero();
 	_est_target_vel.zero();
-	_target_distance.zero();
+	_slave_master_dis.zero();
 	_target_position_offset.zero();
 	reset_mission_item_reached();
 	_follow_target_state = SET_WAIT_FOR_TARGET_POSITION;

@@ -111,7 +111,7 @@ private:
 	matrix::Vector3f _current_vel;
 	matrix::Vector3f _step_vel;
 	matrix::Vector3f _est_target_vel;
-	matrix::Vector3f _target_distance;
+	matrix::Vector3f _slave_master_dis;
 	matrix::Vector3f _target_position_offset;
 	matrix::Vector3f _target_position_delta;
 	matrix::Vector3f _filtered_target_position_delta;
