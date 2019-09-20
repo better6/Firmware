@@ -82,13 +82,13 @@ private:
 		FOLLOW_FROM_LEFT
 	};
 
-	static constexpr float _follow_position_matricies[4][9] = {
+	static constexpr float _follow_position_matricies[6][9] = {
 		{ 1.0F, -1.0F, 0.0F,  1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // follow right
 		{-1.0F,  0.0F, 0.0F,  0.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // follow behind
 		{-1.0F, -1.0F, 0.0F, -1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // right behind
 		{-1.0F, -1.0F, 0.0F,  1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // left behind
-		// { 1.0F,  0.0F, 0.0F,  0.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // follow front
-		// { 1.0F,  1.0F, 0.0F, -1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}  // follow left side
+		{ 1.0F,  0.0F, 0.0F,  0.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // follow front
+		{ 1.0F,  1.0F, 0.0F, -1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}  // follow left side
 	};
 
 	DEFINE_PARAMETERS(
@@ -99,11 +99,11 @@ private:
 	)
 	
 	FollowTargetState _follow_target_state{SET_WAIT_FOR_TARGET_POSITION};
-	int _follow_target_position{FOLLOW_FROM_BEHIND};
+	int _param_follow_side{FOLLOW_FROM_BEHIND};
 
 	int _follow_target_sub{-1};
 	float _step_time_in_ms{0.0f};
-	float _follow_offset{OFFSET_M};
+	float _param_follow_dis{OFFSET_M};
 
 	uint64_t _target_updates{0};
 	uint64_t _last_update_time{0};
@@ -120,7 +120,7 @@ private:
 	follow_target_s _previous_target_motion{};
 
 	float _yaw_rate{0.0f};
-	float _responsiveness{0.0f};
+	float _param_pos_filter{0.0f};
 	float _yaw_angle{0.0f};
 
 	// Mavlink defined motion reporting capabilities

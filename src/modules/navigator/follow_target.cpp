@@ -58,7 +58,7 @@
 
 using matrix::wrap_pi;
 
-constexpr float FollowTarget::_follow_position_matricies[4][9];
+constexpr float FollowTarget::_follow_position_matricies[6][9];
 
 FollowTarget::FollowTarget(Navigator *navigator) :
 	MissionBlock(navigator),
@@ -77,22 +77,23 @@ void FollowTarget::on_inactive()
 	reset_target_validity();
 }
 
+//初始化执行 获取参数，参数
 void FollowTarget::on_activation()
 {
 	//跟随目标的距离参数
-	_follow_offset = _param_tracking_dist.get() < 1.0F ? 1.0F : _param_tracking_dist.get();
+	_param_follow_dis = _param_tracking_dist.get() < 1.0F ? 1.0F : _param_tracking_dist.get();
 
-	_responsiveness = math::constrain((float) _param_tracking_resp.get(), .1F, 1.0F);
+	_param_pos_filter = math::constrain((float) _param_tracking_resp.get(), .1F, 1.0F);
 
 	//从哪个侧面跟随目标
-	_follow_target_position = _param_tracking_side.get();
+	_param_follow_side = _param_tracking_side.get();
 
 	//设置从机侧面跟随的位置，如果参数大于4或者小于0 那就是参数设置出错 则默认设置为跟随后面
-	if ((_follow_target_position > FOLLOW_FROM_LEFT) || (_follow_target_position < FOLLOW_FROM_RIGHT)) {
-		_follow_target_position = FOLLOW_FROM_BEHIND;//目前只能跟随后面
-	}
+	// if ((_param_follow_side > FOLLOW_FROM_LEFT) || (_param_follow_side < FOLLOW_FROM_RIGHT)) {
+	// 	_param_follow_side = FOLLOW_FROM_BEHIND;//目前只能跟随后面
+	// }
 
-	_rot_matrix = (_follow_position_matricies[_follow_target_position]);
+	_rot_matrix = (_follow_position_matricies[_param_follow_side]);
 
 	if (_follow_target_sub < 0) {
 		_follow_target_sub = orb_subscribe(ORB_ID(follow_target));
@@ -146,10 +147,10 @@ void FollowTarget::on_active()
 
 		//这是一个对目标期望位置的滤波，避免目标的位置太过剧烈。滤波的过程取之前的目标位置指令权重+现在目标位置指令权重，避免目标位置变换剧烈，由此不用担心目标的位置剧烈变换
 		_current_target_motion.timestamp = target_motion.timestamp;
-		_current_target_motion.lat = (_current_target_motion.lat * (double)_responsiveness) + target_motion.lat * (double)(
-						     1 - _responsiveness);
-		_current_target_motion.lon = (_current_target_motion.lon * (double)_responsiveness) + target_motion.lon * (double)(
-						     1 - _responsiveness);
+		_current_target_motion.lat = (_current_target_motion.lat * (double)_param_pos_filter) + target_motion.lat * (double)(
+						     1 - _param_pos_filter);
+		_current_target_motion.lon = (_current_target_motion.lon * (double)_param_pos_filter) + target_motion.lon * (double)(
+						     1 - _param_pos_filter);
 
 	} else if (((current_time - _current_target_motion.timestamp) / 1000) > TARGET_TIMEOUT_MS && target_velocity_valid()) {
 		reset_target_validity();
@@ -201,7 +202,7 @@ void FollowTarget::on_active()
 				//目标在转向的时候 并且有速度，这时候从机也会转向保持跟在目标后面，主要是速度原因，而非航向
 				//如果不是转向 目标在直走，ok啊 从机距离主句还是要有一个offset，即保持距离
 				//这一句主要就是实现从机对目标保持一定距离
-				_target_position_offset = _rot_matrix * _est_target_vel.normalized() * _follow_offset;
+				_target_position_offset = _rot_matrix * _est_target_vel.normalized() * _param_follow_dis;
 			}
 
 			// are we within the target acceptance radius?
@@ -356,7 +357,7 @@ void FollowTarget::on_active()
 	case WAIT_FOR_TARGET_POSITION: {
 
 			if (is_mission_item_reached() && target_velocity_valid()) {
-				_target_position_offset(0) = _follow_offset; //记录下跟随距离的参数
+				_target_position_offset(0) = _param_follow_dis; //记录下跟随距离的参数
 				_follow_target_state = TRACK_POSITION; //目标位置都有效了，进入跟随位置
 			}
 
