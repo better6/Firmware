@@ -1415,8 +1415,7 @@ MulticopterPositionControl::control_non_manual()
 			      _pos_sp_triplet.current.velocity_valid;
 
 	// do not go slower than the follow target velocity when position tracking is active (set to valid)
-	//可全局搜索Follow_TARGET 六
-	//这是TRACK_POSITION 远距离跟随位置
+	//可全局搜索Follow_TARGET 六 这是TRACK_POSITION 远距离跟随位置
 	if (_pos_sp_triplet.current.type == position_setpoint_s::SETPOINT_TYPE_FOLLOW_TARGET &&
 	    velocity_valid &&
 	    _pos_sp_triplet.current.position_valid) {
@@ -1444,7 +1443,7 @@ MulticopterPositionControl::control_non_manual()
 
 	} else if (_pos_sp_triplet.current.type == position_setpoint_s::SETPOINT_TYPE_FOLLOW_TARGET &&
 		   velocity_valid) {
-	//TRACK_VELOCITY 近距离跟随速度
+	//可全局搜索Follow_TARGET 六 TRACK_VELOCITY 近距离跟随速度
 
 		_vel_sp(0) = _pos_sp_triplet.current.vx;
 		_vel_sp(1) = _pos_sp_triplet.current.vy;
@@ -1565,7 +1564,7 @@ MulticopterPositionControl::control_offboard()
 		if (_pos_sp_triplet.current.yaw_valid) {
 			_att_sp.yaw_body = _pos_sp_triplet.current.yaw;
 
-		} else if (_pos_sp_triplet.current.yawspeed_valid) {
+		} else if (_pos_sp_triplet.current.yawspeed_valid) {  //这是给offboard模式用的，不是follow_target
 			float yaw_target = wrap_pi(_att_sp.yaw_body + _pos_sp_triplet.current.yawspeed * _dt);
 			float yaw_offs = wrap_pi(yaw_target - _yaw);
 			const float yaw_rate_max = (_man_yaw_max < _global_yaw_max) ? _man_yaw_max : _global_yaw_max;
@@ -1793,8 +1792,8 @@ void MulticopterPositionControl::control_auto()
 	/* create new _pos_sp from triplets */
 	if (current_setpoint_valid &&
 	    (_pos_sp_triplet.current.type != position_setpoint_s::SETPOINT_TYPE_IDLE)) {
-
 		/* update yaw setpoint if needed */
+		//可全局搜索Follow_TARGET 六，这是follow_target.cpp中航向的处理，模式中yawspeed=0，即航向一直保持不变，避免跟随中航向晃动导致的姿态不稳
 		if (_pos_sp_triplet.current.yawspeed_valid
 		    && _pos_sp_triplet.current.type == position_setpoint_s::SETPOINT_TYPE_FOLLOW_TARGET) {
 			_att_sp.yaw_body = _att_sp.yaw_body + _pos_sp_triplet.current.yawspeed * _dt;

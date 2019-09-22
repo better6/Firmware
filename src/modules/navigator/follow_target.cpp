@@ -215,7 +215,7 @@ void FollowTarget::on_active()
 			//我们是否在目标接受半径范围内？
 			//给出一个缓冲区来退出/输入半径，让速度控制器有机会赶上
 
-			//当前飞机距离目标的距离+要和目标保持的参数距离<5米，已经“近身了”
+			//当前飞机距离目标的距离+要和目标保持的参数距离<5米，已经“近身了”,放大范围看看跟速度是什么样的效果？？？现在5米以内才跟速度呢，注意我们的设置的跟随距离6米 是一直在跟随位置 不会进入跟随速度
 			_radius_exited = ((_target_position_offset + _slave_master_dis).length() > (float) TARGET_ACCEPTANCE_RADIUS_M * 1.5f);
 			_radius_entered = ((_target_position_offset + _slave_master_dis).length() < (float) TARGET_ACCEPTANCE_RADIUS_M);
 
