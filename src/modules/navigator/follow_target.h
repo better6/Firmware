@@ -116,7 +116,7 @@ private:
 	matrix::Vector3f _target_position_delta;
 	matrix::Vector3f _filtered_target_position_delta;
 
-	follow_target_s _current_target_motion{};
+	follow_target_s _curr_master_pos{};
 	follow_target_s _previous_target_motion{};
 
 	float _yaw_rate{0.0f};

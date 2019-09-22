@@ -127,7 +127,7 @@ void FollowTarget::on_active()
 
 	orb_check(_follow_target_sub, &updated);
 
-//1. 对目标位置指令进行滤波
+//1. 对主机位置指令进行滤波 得到主机的位置_curr_master_pos
 	if (updated) {
 		follow_target_s target_motion;
 
@@ -135,32 +135,32 @@ void FollowTarget::on_active()
 
 		// save last known motion topic
 
-		_previous_target_motion = _current_target_motion;
+		_previous_target_motion = _curr_master_pos;
 
 		//可全局搜索Follow_TARGET 四，目标的位置信息经度纬度高度转存到target_motion中
 
 		orb_copy(ORB_ID(follow_target), _follow_target_sub, &target_motion);
 
-		if (_current_target_motion.timestamp == 0) {
+		if (_curr_master_pos.timestamp == 0) {
 			//第一次进来，以后称为目标位置指令
-			_current_target_motion = target_motion;
+			_curr_master_pos = target_motion;
 		}
 
 		//这是一个对目标期望位置的滤波，避免目标的位置太过剧烈。滤波的过程取之前的目标位置指令权重+现在目标位置指令权重，避免目标位置变换剧烈，由此不用担心目标的位置剧烈变换
-		_current_target_motion.timestamp = target_motion.timestamp;
-		_current_target_motion.lat = (_current_target_motion.lat * (double)_param_pos_filter) + target_motion.lat * (double)(
+		_curr_master_pos.timestamp = target_motion.timestamp;
+		_curr_master_pos.lat = (_curr_master_pos.lat * (double)_param_pos_filter) + target_motion.lat * (double)(
 						     1 - _param_pos_filter);
-		_current_target_motion.lon = (_current_target_motion.lon * (double)_param_pos_filter) + target_motion.lon * (double)(
+		_curr_master_pos.lon = (_curr_master_pos.lon * (double)_param_pos_filter) + target_motion.lon * (double)(
 						     1 - _param_pos_filter);
 
-	} else if (((current_time - _current_target_motion.timestamp) / 1000) > TARGET_TIMEOUT_MS && target_velocity_valid()) {
+	} else if (((current_time - _curr_master_pos.timestamp) / 1000) > TARGET_TIMEOUT_MS && target_velocity_valid()) {
 		reset_target_validity();
 	}
 
 	// update distance to target
 	//更新到目标的距离
 
-//2.计算当前飞机距离目标位置的水平距离
+//2.计算当前飞机距离目标位置的水平距离 _slave_master_dis
 	if (target_position_valid()) {//follow_target主题更新一次 目标位置指令有更新，如果一段时间没有收到 140行有置位不会进入这里
 
 		// get distance to target
@@ -169,7 +169,7 @@ void FollowTarget::on_active()
 		//飞机现在的位置映射为NED原点（0，0），再把现在位置指令映射成（x，y），则（x，y）就是现在距离目标的距离
 
 		map_projection_init(&target_ref, _navigator->get_global_position()->lat, _navigator->get_global_position()->lon);
-		map_projection_project(&target_ref, _current_target_motion.lat, _current_target_motion.lon, &_slave_master_dis(0),
+		map_projection_project(&target_ref, _curr_master_pos.lat, _curr_master_pos.lon, &_slave_master_dis(0),
 				       &_slave_master_dis(1));
 
 	}
@@ -180,7 +180,7 @@ void FollowTarget::on_active()
 	if (target_velocity_valid() && updated) {//follow_target主题更新两次 可以求目标速度了
 
 		//计算出两次更新的时间间隔，用于求速度
-		dt_ms = ((_current_target_motion.timestamp - _previous_target_motion.timestamp) / 1000);
+		dt_ms = ((_curr_master_pos.timestamp - _previous_target_motion.timestamp) / 1000);
 
 		// ignore a small dt
 		if (dt_ms > 10.0F) {
@@ -189,7 +189,7 @@ void FollowTarget::on_active()
 			map_projection_init(&target_ref, _previous_target_motion.lat, _previous_target_motion.lon);
 
 			//计算目标移动的距离
-			map_projection_project(&target_ref, _current_target_motion.lat, _current_target_motion.lon,
+			map_projection_project(&target_ref, _curr_master_pos.lat, _curr_master_pos.lon,
 					       &(_target_position_delta(0)), &(_target_position_delta(1)));
 
 			//根据上面目标两次位置的变换 计算出速度_est表示估算出来的目标速度
@@ -199,12 +199,12 @@ void FollowTarget::on_active()
 
 			// if the target is moving add an offset and rotation
 			//如果目标有速度正在移动，则添加偏移和旋转，这个偏移和旋转指什么，要解决什么问题，前馈目标的位置？
-			if (_est_target_vel.length() > .5F) {
+			if (_est_target_vel.length() > 1.5F) { ///？？？？/////////////////////////////////////实测特别有效 主机停下时  从机也稳定，从机的速度可以大于主机 没事，不会超过 停下也没事
 				//如果目标（目标）有移动，则目标在移动过程中 从机也要找到位置进行跟随，从机只是从目标那里获取经度纬度高度数据
 				//目标在转向的时候 并且有速度，这时候从机也会转向保持跟在目标后面，主要是速度原因，而非航向
 				//如果不是转向 目标在直走，ok啊 从机距离主句还是要有一个offset，即保持距离
 				//这一句主要就是实现从机对目标保持一定距离
-				_target_position_offset = _rot_matrix * _est_target_vel.normalized() * _param_follow_dis;
+				_target_position_offset = _rot_matrix * _est_target_vel.normalized() * _param_follow_dis;//实测 没有旋转矩阵 无法保持方位？？？？为什么
 			}
 
 			// are we within the target acceptance radius?
@@ -232,7 +232,7 @@ void FollowTarget::on_active()
 			// if we are less than 1 meter from the target don't worry about trying to yaw
 			// lock the yaw until we are at a distance that makes sense
 
-			if ((_slave_master_dis).length() > 1.0F) {
+			if ((_slave_master_dis).length() > 1.0F) { ////？？？2
 
 				// yaw rate smoothing
 
@@ -241,8 +241,8 @@ void FollowTarget::on_active()
 
 				_yaw_angle = get_bearing_to_next_waypoint(_navigator->get_global_position()->lat,
 						_navigator->get_global_position()->lon,
-						_current_target_motion.lat,
-						_current_target_motion.lon);
+						_curr_master_pos.lat,
+						_curr_master_pos.lon);
 
 				_yaw_rate = wrap_pi((_yaw_angle - _navigator->get_global_position()->yaw) / (dt_ms / 1000.0f));
 
@@ -253,14 +253,14 @@ void FollowTarget::on_active()
 
 
 	}
-//
+//5.计算从机真实飞往的位置
 	
 	if (target_position_valid()) {//如果目标位置有效
 
 		// get the target position using the calculated offset
 
 		//根据目标的位置指令 以及从机跟随的参数 计算出从机真实应该飞往的目标位置
-		map_projection_init(&target_ref,  _current_target_motion.lat, _current_target_motion.lon);
+		map_projection_init(&target_ref,  _curr_master_pos.lat, _curr_master_pos.lon);
 		map_projection_reproject(&target_ref, _target_position_offset(0), _target_position_offset(1),
 					 &slave_target_pos.lat, &slave_target_pos.lon);
 	}
@@ -273,6 +273,8 @@ void FollowTarget::on_active()
 			_yaw_rate = NAN;
 		}
 	}
+
+	_yaw_rate = 0;///////////////////效果很明显 飞机不会再转向
 
 	// update state machine
 
@@ -395,7 +397,7 @@ void FollowTarget::reset_target_validity()
 {
 	_yaw_rate = NAN;
 	_previous_target_motion = {};
-	_current_target_motion = {};
+	_curr_master_pos = {};
 	_target_updates = 0;
 	_current_vel.zero();
 	_step_vel.zero();
