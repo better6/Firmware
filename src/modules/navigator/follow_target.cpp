@@ -77,23 +77,24 @@ void FollowTarget::on_inactive()
 	reset_target_validity();
 }
 
-//初始化执行 获取参数，参数
+//1. 初始化切换模式时执行一次：参数参数
 void FollowTarget::on_activation()
 {
-	//跟随目标的距离参数
-	_param_follow_dis = _param_tracking_dist.get() < 1.0F ? 1.0F : _param_tracking_dist.get();
+	//跟随目标的距离,这个距离指什么距离？？1
+	_param_follow_dis = _param_tracking_dist.get() < 3.0F ? 3.0F : _param_tracking_dist.get();
 
+	//对主机发送的位置进行一阶滤波
 	_param_pos_filter = math::constrain((float) _param_tracking_resp.get(), .1F, 1.0F);
 
-	//从哪个侧面跟随目标
+	//从哪个侧面跟随目标，需要配合旋转矩阵一起使用，旋转矩阵怎起作用的？？2
 	_param_follow_side = _param_tracking_side.get();
 
-	//设置从机侧面跟随的位置，如果参数大于4或者小于0 那就是参数设置出错 则默认设置为跟随后面
+	//设置从机侧面跟随的位置，如果参数大于4或者小于0 那就是参数设置出错 则默认设置为跟随后面  可以测试下现在无头模式下的其他跟随方位？？3
 	// if ((_param_follow_side > FOLLOW_FROM_LEFT) || (_param_follow_side < FOLLOW_FROM_RIGHT)) {
 	// 	_param_follow_side = FOLLOW_FROM_BEHIND;
 	// }
 
-	//跟随方位的旋转矩阵怎么用，还不清楚
+	//跟随方位的旋转矩阵怎么用，还不清楚  ？？4
 	_rot_matrix = (_follow_position_matricies[_param_follow_side]);
 
 	if (_follow_target_sub < 0) {
@@ -110,7 +111,7 @@ void FollowTarget::on_activation()
 //update_position_sp函数中_mission_item赋值给pos_sp_triplet->current，并且还赋值几个重要的标志位 航点类型SETPOINT_TYPE_FOLLOW_TARGET position_valid  velocity_valid
 //这个主题和这三个标志位都会传递到位置控制中使用实现具体的控制，怎么使用的可以去看mc_pso_control.cpp，看看位置跟随 速度跟随在哪里具体怎么实现的
 
-//位置传递的过程
+//主机target位置传递的过程
 //vehicle_global_position 到 mavlink消息FOLLOW_TARGET发送出去 到接收到解析为主题消息follow_target 到封装为pos_sp_triple->cucurrent传递给位置控制 位置控制会将经度纬度转换为local本地坐标系
 //中间涉及本身的位置解算global gps  local   
 
@@ -127,11 +128,11 @@ void FollowTarget::on_active()
 
 	orb_check(_follow_target_sub, &updated);
 
-//1. 对主机位置指令进行滤波 得到主机的位置_curr_master_pos
+//2. 对主机位置指令进行滤波 得到主机的滤波后的位置_curr_master_pos
 	if (updated) {
 		follow_target_s target_motion;
 
-		_target_updates++; //follow_target主题有更新 下面就有效
+		_target_updates++; //follow_target主题有更新 说明主机位置、速度有效
 
 		// save last known motion topic
 
@@ -153,14 +154,16 @@ void FollowTarget::on_active()
 		_curr_master_pos.lon = (_curr_master_pos.lon * (double)_param_pos_filter) + target_motion.lon * (double)(
 						     1 - _param_pos_filter);
 
-	} else if (((current_time - _curr_master_pos.timestamp) / 1000) > TARGET_TIMEOUT_MS && target_velocity_valid()) {
+	} 
+	//如果好久没收到主机位置信息 则置位所有，重新来过。有此代码在此守候，不用担心万一接收不到主机数据怎么办，如果没接收到此模块标志位无效 大部分程序不运行，从机保持悬停等待主机位置数据
+	else if (((current_time - _curr_master_pos.timestamp) / 1000) > TARGET_TIMEOUT_MS && target_velocity_valid()) {
 		reset_target_validity();
 	}
 
 	// update distance to target
 	//更新到目标的距离
 
-//2.计算当前飞机距离目标位置的水平距离 _slave_master_dis
+//2.计算当前从机距离主机的水平距离xy
 	if (target_position_valid()) {//follow_target主题更新一次 目标位置指令有更新，如果一段时间没有收到 140行有置位不会进入这里
 
 		// get distance to target
@@ -176,29 +179,29 @@ void FollowTarget::on_active()
 
 	// update target velocity
 	//更新目标的速度 所有的目标是值跟随目标
-//3.计算目标速度_est_target_vel  以及距离保持_target_position_offset
+//3.计算主机水平速度_est_target_vel，没算z轴速度
 	if (target_velocity_valid() && updated) {//follow_target主题更新两次 可以求目标速度了
 
-		//计算出两次更新的时间间隔，用于求速度
+		//计算出两次更新的时间间隔，这里用于求速度,也代表主机位置更新的频率
 		dt_ms = ((_curr_master_pos.timestamp - _previous_target_motion.timestamp) / 1000);
 
 		// ignore a small dt
-		if (dt_ms > 10.0F) {
+		if (dt_ms > 10.0F) { //100hz
 			// get last gps known reference for target
-			//把上一次的位置指令 映射成NED原点（0,0），下面再把现在的位置指令映射出来 就可以得到目标两次位置的变换 即可可以算出目标的速度
+			//把上一次的主机位置指令 映射成NED原点（0,0），下面再把现在的位置指令映射出来 就可以得到目标两次位置的变换 即可算出目标的速度
 			map_projection_init(&target_ref, _previous_target_motion.lat, _previous_target_motion.lon);
 
 			//计算目标移动的距离
 			map_projection_project(&target_ref, _curr_master_pos.lat, _curr_master_pos.lon,
 					       &(_target_position_delta(0)), &(_target_position_delta(1)));
 
-			//根据上面目标两次位置的变换 计算出速度_est表示估算出来的目标速度
+			//根据上面目标两次位置的变换 计算出速度_est表示估算出来的目标速度，注意这是水平面的速度 没有z轴速度
 			_est_target_vel = _target_position_delta / (dt_ms / 1000.0f);
 
-//4.当目标有速度时 从机开始找方位跟随
+//4.当主机移动时 从机开始找方位 保持水平距离进行跟随
 
 			// if the target is moving add an offset and rotation
-			//如果目标有速度正在移动，则添加偏移和旋转，这个偏移和旋转指什么，要解决什么问题，前馈目标的位置？
+			//如果目标有速度正在移动，则添加偏移和旋转，这个偏移和旋转指什么，要解决什么问题，前馈目标的位置？？5
 			if (_est_target_vel.length() > 1.5F) { //实测特别有效 主机停下时  从机也会稳定停下，不会乱飘，只有在检测在主机速度时 才会继续跟。从机的最大速度可以大于主机。
 				//如果目标（目标）有移动，则目标在移动过程中 从机也要找到位置进行跟随，从机只是从目标那里获取经度纬度高度数据
 				//目标在转向的时候 并且有速度，这时候从机也会转向保持跟在目标后面，主要是速度原因，而非航向
@@ -231,8 +234,8 @@ void FollowTarget::on_active()
 
 			// if we are less than 1 meter from the target don't worry about trying to yaw
 			// lock the yaw until we are at a distance that makes sense
-
-			if ((_slave_master_dis).length() > 1.0F) { ////？？？2
+			//计算航向差得出偏航角速度 应该是希望从机机头指向主机 实际效果特别差从机航向乱转，因为是因为主从位置不准的原因导致的。最后不使用。
+			if ((_slave_master_dis).length() > 1.0F) { 
 
 				// yaw rate smoothing
 
@@ -253,7 +256,7 @@ void FollowTarget::on_active()
 
 
 	}
-//5.计算从机真实飞往的位置
+//5.根据距离 方位等参数，计算从机跟随应该飞往真正的位置：经度纬度没有高度。
 	
 	if (target_position_valid()) {//如果目标位置有效
 
@@ -274,14 +277,15 @@ void FollowTarget::on_active()
 		}
 	}
 
+//6.从机至始至终保持航向不变，无头模式进行跟随，避免因航向晃动导致姿态晃动。
 	/////////////////////////////////////////////////////
 	_yaw_rate = 0;//这一句很重要，没有了角速度的“跟随”，避免从机跟着主机时乱动航向，航向乱动 俯仰横滚跟着动，整个跟随效果太别差劲！从机特别不稳 乱晃！实测的。。
 	              //取消航向角速度 ，就是飞机跟随过程中航向一直保持不变，可以看做是无头模式！已经实测，跟随的稳定性极好！无头模式航向保持不变 位置跟随 从机姿态很平稳。
 	/////////////////////////////////////////////////////
 
 	// update state machine
-
-	switch (_follow_target_state) { //初始化为SET_WAIT_FOR_TARGET_POSITION 等待目标位置
+//7. 进入最后的从机跟随的状态机，从机保持悬停、还是跟随位置、还是跟随速度，跟随的实现需要跟踪到位置控制里。
+	switch (_follow_target_state) { //初始化为SET_WAIT_FOR_TARGET_POSITION 等待主机位置
 
 	//在目标位置有效时 进入跟随目标位置
 	case TRACK_POSITION: {
@@ -290,7 +294,7 @@ void FollowTarget::on_active()
 				_follow_target_state = TRACK_VELOCITY;
 
 			} 
-			//距离目标还比较远，且目标位置有效
+			//距离目标还比较远，且目标位置有效，进行位置跟随
 			else if (target_velocity_valid()) {
 
 				////////开始跟随目标位置。跟随的位置是带有“距离参数”的位置target_motion_with_offset
@@ -300,7 +304,9 @@ void FollowTarget::on_active()
 				
 				update_position_sp(true, true, _yaw_rate);
 
-			} else {
+			} 
+			//跟的过程中接收不到主机位置了，当前位置保持悬停
+			else {
 				_follow_target_state = SET_WAIT_FOR_TARGET_POSITION;
 			}
 
@@ -314,7 +320,7 @@ void FollowTarget::on_active()
 				_follow_target_state = TRACK_POSITION;
 
 			} 
-			//跟随目标速度
+			//近距离进入速度跟随
 			else if (target_velocity_valid()) {
 
 				if ((float)(current_time - _last_update_time) / 1000.0f >= _step_time_in_ms) {
@@ -327,7 +333,7 @@ void FollowTarget::on_active()
 				update_position_sp(true, false, _yaw_rate);
 
 			} 
-			//距离目标很近 但是目标速度无效 就是接受不到目标数据了，重新进入状态机
+			//接收不到主机位置数据 保持悬停重新进入状态机
 			else {
 				_follow_target_state = SET_WAIT_FOR_TARGET_POSITION;
 			}
@@ -335,7 +341,7 @@ void FollowTarget::on_active()
 			break;
 		}
 
-	//状态机的初始值
+	//以当前位置 爬升到参数最小高度（最小8），保持悬停 等待主机位置。
 	case SET_WAIT_FOR_TARGET_POSITION: {
 
 			//爬升到最低高度，并等待目标位置
@@ -348,11 +354,11 @@ void FollowTarget::on_active()
 			target.lon = _navigator->get_global_position()->lon;
 			target.alt = 0.0F;
 
-			//以当前飞机位置 爬升到参数最小高度，这里写死了最小8米，等到目标位置。
+			//以当前飞机位置 爬升到参数最小高度，这里写死了最小8米，悬停 等待主机位置。
 			//所以就是如果切换到follow_target模式 没有目标位置，飞机就会一直在这里保持悬停
 			set_follow_target_item(&_mission_item, _param_min_alt.get(), target, _yaw_angle);
 
-			//赋值给pos_sp_triplet->current传递给位置控制进行位置实现，注意这里设置了航点类型pos_sp_triplet->current.type= 。。。SETPOINT_TYPE_FOLLOW_TARGET
+			//赋值给pos_sp_triplet->current传递给位置控制进行位置实现，注意这里设置了航点类型pos_sp_triplet->current.type= SETPOINT_TYPE_FOLLOW_TARGET
 			update_position_sp(false, false, _yaw_rate);
 
 			//在当前位置保持悬停，进入下一个状态机，等待目标位置
@@ -360,12 +366,12 @@ void FollowTarget::on_active()
 		}
 
 	
-	//等到目标位置，如果航点已经到达（item->nav_cmd = NAV_CMD_DO_FOLLOW_REPOSITION; 直接为true），并且目标位置速度都有效了，那位置一定有效
+	//从机保持悬停等待中，如果主机位子信息有效了 则进入位置跟踪
 	case WAIT_FOR_TARGET_POSITION: {
 
 			if (is_mission_item_reached() && target_velocity_valid()) {
 				_target_position_offset(0) = _param_follow_dis; //记录下跟随距离的参数
-				_follow_target_state = TRACK_POSITION; //目标位置都有效了，进入跟随位置
+				_follow_target_state = TRACK_POSITION; //目标位置有效了，进入跟随位置，如果位置没有效 代码保持在这里 从机保持悬停
 			}
 
 			break;
@@ -438,8 +444,8 @@ FollowTarget::set_follow_target_item(struct mission_item_s *item, float min_clea
 		/* use current target position */
 		item->lat = target.lat;
 		item->lon = target.lon;
-		item->altitude = _navigator->get_home_position()->alt;
-
+		item->altitude = _navigator->get_home_position()->alt;//这是home高度
+		//这是跟踪的最小高度写死了为8
 		if (min_clearance > 8.0f) {
 			item->altitude += min_clearance;
 

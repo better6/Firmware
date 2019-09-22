@@ -60,7 +60,7 @@ PARAM_DEFINE_FLOAT(NAV_MIN_FT_HT, 5.0f);  //跟随目标的最低高度，单位
  * The distance in meters to follow the target at
  *
  * @unit meters
- * @min 1.0
+ * @min 3.0
  * @group Follow target
  */
 PARAM_DEFINE_FLOAT(NAV_FT_DST, 6.0f); //跟随目标的距离，单位米
