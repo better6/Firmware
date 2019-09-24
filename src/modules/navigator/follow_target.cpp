@@ -102,6 +102,10 @@ void FollowTarget::on_activation()
 	if (_follow_target_sub < 0) {
 		_follow_target_sub = orb_subscribe(ORB_ID(follow_target));
 	}
+
+	if (_formation_type_sub < 0) {
+		_formation_type_sub = orb_subscribe(ORB_ID(formation_type));
+	}
 }
 
 
@@ -128,20 +132,14 @@ void FollowTarget::on_active()
 	bool updated = false;
 	float dt_ms = 0;
 
-	//下面根据飞机ID、方位、高度、距离四个参数开发队形和队形变换的代码。
-	//跟随方位_param_tracking_side： 1 后面  2左后侧  3右后侧  4右面  5左面
-	//跟随距离：_param_follow_dis
-	//从机高度：_param_min_alt   飞机ID：_vehicle_id
-
-	_param_follow_side = _param_tracking_side.get();
-	_rot_matrix = (_follow_position_matricies[_param_follow_side]);
-
-	_param_follow_dis = _param_tracking_dist.get() < 3.0F ? 3.0F : _param_tracking_dist.get();
-
 	orb_check(_follow_target_sub, &updated);
 
 //2. 对主机位置指令进行滤波 得到主机的滤波后的位置_curr_master_pos
 	if (updated) {
+
+		//编队实现
+		formation_pre();
+
 		follow_target_s target_motion;
 
 		_target_updates++; //follow_target主题有更新 说明主机位置、速度有效
@@ -310,7 +308,7 @@ void FollowTarget::on_active()
 			else if (target_velocity_valid()) {
 
 				////////开始跟随目标位置。跟随的位置是带有“距离参数”的位置target_motion_with_offset
-				set_follow_target_item(&_mission_item, _param_min_alt.get(), slave_target_pos, _yaw_angle);
+				set_follow_target_item(&_mission_item, _param_follow_alt, slave_target_pos, _yaw_angle);
 				// keep the current velocity updated with the target velocity for when it's needed
 				_current_vel = _est_target_vel;
 				
@@ -340,7 +338,7 @@ void FollowTarget::on_active()
 					_last_update_time = current_time;
 				}
 
-				set_follow_target_item(&_mission_item, _param_min_alt.get(), slave_target_pos, _yaw_angle);
+				set_follow_target_item(&_mission_item, _param_follow_alt, slave_target_pos, _yaw_angle);
 				//使用速度 位置无效
 				update_position_sp(true, false, _yaw_rate);
 
@@ -368,7 +366,7 @@ void FollowTarget::on_active()
 
 			//以当前飞机位置 爬升到参数最小高度，这里写死了最小8米，悬停 等待主机位置。
 			//所以就是如果切换到follow_target模式 没有目标位置，飞机就会一直在这里保持悬停
-			set_follow_target_item(&_mission_item, _param_min_alt.get(), target, _yaw_angle);
+			set_follow_target_item(&_mission_item, _param_follow_alt, target, _yaw_angle);
 
 			//赋值给pos_sp_triplet->current传递给位置控制进行位置实现，注意这里设置了航点类型pos_sp_triplet->current.type= SETPOINT_TYPE_FOLLOW_TARGET
 			update_position_sp(false, false, _yaw_rate);
@@ -428,6 +426,88 @@ void FollowTarget::reset_target_validity()
 	reset_mission_item_reached();
 	_follow_target_state = SET_WAIT_FOR_TARGET_POSITION;
 }
+
+
+
+//下面根据飞机ID、方位、高度、距离四个参数开发队形和队形变换的代码。
+//跟随方位_param_tracking_side： 1 后面  2左后侧  3右后侧  4右面  5左面
+//跟随距离：_param_follow_dis;  从机高度：_param_min_alt ;  飞机ID：_vehicle_id
+
+//编队思路：先获取mavlink编队信息，编写编队状态机，再确认各飞机上面的编队参数。
+
+void FollowTarget::formation_pre()
+{
+
+	//获取地面站发送过来的mavlink消息FORMATION_TYPE -> msg消息formation_type -> 变量_formation
+	bool updated=false;
+	orb_check(_formation_type_sub, &updated);
+
+	if(updated){
+		orb_copy(ORB_ID(formation_type), _formation_type_sub, &_formation);
+		
+		if(_formation.start_end==2)//队形中
+		{	
+			_curr_shape=_formation.formation_type; //记录期望的队形
+		}
+
+	}
+
+	// if(_curr_shape!=_mav_shape){ //如果现在的队形不等于期望的队形
+	// 	switch(_mav_shape){
+	// 		case TRIANGLE://期望三角队形
+	// 			_curr_shape=TRIANGLE;
+	// 			break;
+			
+	// 		case HORIZONTAL://想切横向一字，直接切
+	// 			_curr_shape=HORIZONTAL;
+	// 			break;
+
+	// 		case VERTICAL://想切横纵向一字
+	// 			_curr_shape=VERTICAL;
+	// 			break;
+
+	// 		default:
+	// 			_curr_shape = TRIANGLE;
+	// 			break;
+
+	// 	}
+
+	// }
+	
+
+	//重新读取跟随距离
+	_param_follow_dis = _param_tracking_dist.get() < 3.0F ? 3.0F : _param_tracking_dist.get();
+	//重新读取高度
+	_param_follow_alt = _param_min_alt.get();
+
+	if(_curr_shape==TRIANGLE){//实现三角队形
+		
+		if(2==_vehicle_id)     {  _param_follow_side=2;  } //2号飞机左侧
+		else if(3==_vehicle_id){  _param_follow_side=3;  } //3号飞机飞右侧
+		else                   {  _param_follow_side=1;  }
+	}
+	else if(_curr_shape==HORIZONTAL){
+		if(2==_vehicle_id)     {  _param_follow_side=5;  } //2号飞机左侧
+		else if(3==_vehicle_id){  _param_follow_side=4;  } //3号飞机飞右侧
+		else                   {  _param_follow_side=1;  }
+	}
+	else if(_curr_shape==VERTICAL){
+		
+		if(2==_vehicle_id)     {  _param_follow_side=1; _param_follow_dis=5.0f; } //2号飞机飞后侧 
+		else if(3==_vehicle_id){  _param_follow_side=1; _param_follow_dis=10.0f; } //3号飞机飞后侧
+		else                   {  _param_follow_side=1;  }
+
+	}
+	else{
+
+	}
+
+	//重新赋值旋转矩阵
+	_rot_matrix = (_follow_position_matricies[_param_follow_side]);
+
+}
+
+
 
 bool FollowTarget::target_velocity_valid()
 {

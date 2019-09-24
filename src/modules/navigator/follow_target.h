@@ -48,6 +48,7 @@
 
 #include <px4_module_params.h>
 #include <uORB/topics/follow_target.h>
+#include <uORB/topics/formation_type.h>
 
 class FollowTarget : public MissionBlock, public ModuleParams
 {
@@ -84,17 +85,29 @@ private:
 		FOLLOW_LEFT
 	};
 
+	enum {
+		START=1,
+		FORM=2,
+		END=3
+	};
+
+	enum {
+		TRIANGLE=1,//三角形
+		HORIZONTAL=2,//横向一字
+		VERTICAL=3 //纵向一字
+	};
+
 	//下面是绕z轴旋转
 	//cos  -sin 0
 	//sin  cos  0
 	//0     0   1
-	static constexpr float _follow_position_matricies[6][9] = {
+	static constexpr float _follow_position_matricies[6][9] = {     //下面的角度不正确,不要随意改动 _param_follow_side在用
 		{ 1.0F,  0.0F, 0.0F,  0.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 0度   follow front
 		{-1.0F,  0.0F, 0.0F,  0.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 180度 follow behind
-		{-1.0F,  1.0F, 0.0F, -1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 自己添加的左后侧  behind*right 
-		{-1.0F, -1.0F, 0.0F,  1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 自己添加的右后侧   left*behind
-		{ 1.0F, -1.0F, 0.0F,  1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // follow right	
-		{ 1.0F,  1.0F, 0.0F, -1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F} // follow left side
+		{-1.0F,  1.0F, 0.0F, -1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // -225度 自己添加的左后侧  behind*right 
+		{-1.0F, -1.0F, 0.0F,  1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 135度 自己添加的右后侧   left*behind
+		{ 1.0F, -1.0F, 0.0F,  1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 45都 follow right	
+		{ 1.0F,  1.0F, 0.0F, -1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F} //  -45度 follow left side
 
 	};
 
@@ -108,11 +121,19 @@ private:
 	
 	FollowTargetState _follow_target_state{SET_WAIT_FOR_TARGET_POSITION};
 	int _param_follow_side{FOLLOW_BEHIDE};
+	float _param_follow_alt{8.0f};
+	float _param_follow_dis{OFFSET_M};
 	int _vehicle_id{0};
 
 	int _follow_target_sub{-1};
+	int _formation_type_sub{-1};
 	float _step_time_in_ms{0.0f};
-	float _param_follow_dis{OFFSET_M};
+
+	formation_type_s _formation{0};
+
+	uint8_t _curr_shape{1};
+	uint8_t _mid_shape{1};
+	uint8_t _mav_shape{1};
 
 	uint64_t _target_updates{0};
 	uint64_t _last_update_time{0};
@@ -147,6 +168,7 @@ private:
 	bool target_velocity_valid();
 	bool target_position_valid();
 	void reset_target_validity();
+	void formation_pre();
 	void update_position_sp(bool velocity_valid, bool position_valid, float yaw_rate);
 	void update_target_motion();
 	void update_target_velocity();
