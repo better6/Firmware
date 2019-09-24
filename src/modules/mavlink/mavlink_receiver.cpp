@@ -145,6 +145,7 @@ MavlinkReceiver::MavlinkReceiver(Mavlink *parent) :
 	_debug_key_value_pub(nullptr),
 	_debug_value_pub(nullptr),
 	_debug_vect_pub(nullptr),
+	_formation_pub(nullptr),
 	_gps_inject_data_pub(nullptr),
 	_command_ack_pub(nullptr),
 	_control_mode_sub(orb_subscribe(ORB_ID(vehicle_control_mode))),
@@ -2488,42 +2489,17 @@ void MavlinkReceiver::handle_message_formation_type(mavlink_message_t *msg)
 	mavlink_formation_type_t  type_msg;
 	mavlink_msg_formation_type_decode(msg, &type_msg);	
 
-	struct vehicle_command_s vcmd={};
-	bool pub=false;
+	formation_type_s formation={};
+	formation.target_id     = type_msg.target_id;
+ 	formation.formation_type= type_msg.formation_type;
+ 	formation.start_end     = type_msg.start_end;
+ 	formation.unused        = type_msg.unused;
 
-	if(type_msg.start_end==1){
-		pub=true;
+	if (_formation_pub == nullptr) {
+		_formation_pub = orb_advertise(ORB_ID(formation_type), &formation);
 
-		vcmd.param1 = 213;
-		vcmd.param2 = 7; //STAB
-		vcmd.param3 = 0;	//
-		vcmd.param4 = 0;
-		vcmd.param5 = 0;
-		vcmd.param6 = 0;
-		vcmd.param7 = 0;
-		vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
-		vcmd.target_system = 1;
-		vcmd.target_component = 0;
-		vcmd.source_system = 255;
-		vcmd.source_component = 255;
-		vcmd.confirmation = 1;	
-	}
-	
-
-
-	// warnx("target_id=%d",type_msg.target_id);
-	// warnx("type=%d",type_msg.formation_type);
-	// warnx("start=%d",type_msg.start_end);
-	// warnx("unused=%d",type_msg.unused);
-
-	if(pub){ //需要发布的时候才发布 不会随便发布
-
-		if (_cmd_pub == nullptr) {
-			_cmd_pub = orb_advertise_queue(ORB_ID(vehicle_command), &vcmd, vehicle_command_s::ORB_QUEUE_LENGTH);
-
-		} else {
-			orb_publish(ORB_ID(vehicle_command), _cmd_pub, &vcmd);
-		}
+	} else {
+		orb_publish(ORB_ID(formation_type), _formation_pub, &formation);
 	}
 
 }
