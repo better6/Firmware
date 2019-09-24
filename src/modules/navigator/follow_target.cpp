@@ -126,6 +126,11 @@ void FollowTarget::on_active()
 	bool updated = false;
 	float dt_ms = 0;
 
+	_param_follow_side = _param_tracking_side.get();
+	_rot_matrix = (_follow_position_matricies[_param_follow_side]);
+
+	//_param_follow_dis = _param_tracking_dist.get() < 3.0F ? 3.0F : _param_tracking_dist.get();
+
 	orb_check(_follow_target_sub, &updated);
 
 //2. 对主机位置指令进行滤波 得到主机的滤波后的位置_curr_master_pos

@@ -72,7 +72,7 @@ PARAM_DEFINE_FLOAT(NAV_FT_DST, 6.0f); //跟随目标的距离，单位米
  *
  * @unit n/a
  * @min 0
- * @max 3
+ * @max 5
  * @group Follow target
  */
 PARAM_DEFINE_INT32(NAV_FT_FS, 1); //从哪个侧面跟随目标 右面、后面、前面、前左，可以测试下效果
