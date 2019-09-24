@@ -80,21 +80,23 @@ void FollowTarget::on_inactive()
 //1. 初始化切换模式时执行一次：参数参数
 void FollowTarget::on_activation()
 {
-	//跟随目标的距离,这个距离指什么距离？？1
+	//跟随目标的水平距离
 	_param_follow_dis = _param_tracking_dist.get() < 3.0F ? 3.0F : _param_tracking_dist.get();
 
-	//对主机发送的位置进行一阶滤波
+	//对接收到的主机位置进行一阶滤波
 	_param_pos_filter = math::constrain((float) _param_tracking_resp.get(), .1F, 1.0F);
 
-	//从哪个侧面跟随目标，需要配合旋转矩阵一起使用，旋转矩阵怎起作用的？？2
+	//跟随方位，这个旋转的矩阵的计算类似绕偏航旋转
 	_param_follow_side = _param_tracking_side.get();
 
-	//设置从机侧面跟随的位置，如果参数大于4或者小于0 那就是参数设置出错 则默认设置为跟随后面  可以测试下现在无头模式下的其他跟随方位？？3
-	// if ((_param_follow_side > FOLLOW_FROM_LEFT) || (_param_follow_side < FOLLOW_FROM_RIGHT)) {
-	// 	_param_follow_side = FOLLOW_FROM_BEHIND;
-	// }
+	//飞机的编号
+	_vehicle_id=_param_vehicle_id.get();
 
-	//跟随方位的旋转矩阵怎么用，还不清楚  ？？4
+
+	if ((_param_follow_side > FOLLOW_LEFT) || (_param_follow_side < FOLLOW_FRONT)) {
+		_param_follow_side = FOLLOW_BEHIDE;
+	}
+
 	_rot_matrix = (_follow_position_matricies[_param_follow_side]);
 
 	if (_follow_target_sub < 0) {
@@ -115,7 +117,7 @@ void FollowTarget::on_activation()
 //vehicle_global_position 到 mavlink消息FOLLOW_TARGET发送出去 到接收到解析为主题消息follow_target 到封装为pos_sp_triple->cucurrent传递给位置控制 位置控制会将经度纬度转换为local本地坐标系
 //中间涉及本身的位置解算global gps  local   
 
-
+//强调一句，主机有速度从机才会跟随，跟随的是位置或者速度
 void FollowTarget::on_active()
 {
 	struct map_projection_reference_s target_ref;
@@ -126,10 +128,15 @@ void FollowTarget::on_active()
 	bool updated = false;
 	float dt_ms = 0;
 
+	//下面根据飞机ID、方位、高度、距离四个参数开发队形和队形变换的代码。
+	//跟随方位_param_tracking_side： 1 后面  2左后侧  3右后侧  4右面  5左面
+	//跟随距离：_param_follow_dis
+	//从机高度：_param_min_alt   飞机ID：_vehicle_id
+
 	_param_follow_side = _param_tracking_side.get();
 	_rot_matrix = (_follow_position_matricies[_param_follow_side]);
 
-	//_param_follow_dis = _param_tracking_dist.get() < 3.0F ? 3.0F : _param_tracking_dist.get();
+	_param_follow_dis = _param_tracking_dist.get() < 3.0F ? 3.0F : _param_tracking_dist.get();
 
 	orb_check(_follow_target_sub, &updated);
 

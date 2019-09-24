@@ -76,10 +76,12 @@ private:
 	};
 
 	enum {
-		FOLLOW_FROM_RIGHT,
-		FOLLOW_FROM_BEHIND,
-		FOLLOW_FROM_FRONT,
-		FOLLOW_FROM_LEFT
+		FOLLOW_FRONT,
+		FOLLOW_BEHIDE,
+		FOLLOW_LEFT_BEHIDE,
+		FOLLOW_RIGHT_BEHIND,
+		FOLLOW_RIGHT,
+		FOLLOW_LEFT
 	};
 
 	//下面是绕z轴旋转
@@ -100,11 +102,13 @@ private:
 		(ParamFloat<px4::params::NAV_MIN_FT_HT>)	_param_min_alt,
 		(ParamFloat<px4::params::NAV_FT_DST>) _param_tracking_dist,
 		(ParamInt<px4::params::NAV_FT_FS>) _param_tracking_side,
-		(ParamFloat<px4::params::NAV_FT_RS>) _param_tracking_resp
+		(ParamFloat<px4::params::NAV_FT_RS>) _param_tracking_resp,
+		(ParamInt<px4::params::MAV_SYS_ID>) _param_vehicle_id
 	)
 	
 	FollowTargetState _follow_target_state{SET_WAIT_FOR_TARGET_POSITION};
-	int _param_follow_side{FOLLOW_FROM_BEHIND};
+	int _param_follow_side{FOLLOW_BEHIDE};
+	int _vehicle_id{0};
 
 	int _follow_target_sub{-1};
 	float _step_time_in_ms{0.0f};
