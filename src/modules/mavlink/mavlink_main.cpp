@@ -2017,34 +2017,38 @@ Mavlink::task_main(int argc, char *argv[])
 	//这是ttyS1就是数传1的mavlink配置，对数据进行降频
     case MAVLINK_MODE_NORMAL:   //使用数传接到radio上时一般用这个模式
         //这是ttyS1就是数传1的mavlink配置
-        configure_stream("ADSB_VEHICLE");
-        configure_stream("ALTITUDE", 1.0f);
-        configure_stream("ATTITUDE", 2.0f);
-        configure_stream("ATTITUDE_TARGET", 2.0f);
-        configure_stream("CAMERA_IMAGE_CAPTURED");
-        configure_stream("COLLISION");
-        configure_stream("DEBUG", 1.0f);
-        configure_stream("DEBUG_VECT", 1.0f);
-//        configure_stream("DISTANCE_SENSOR", 0.5f);
-        configure_stream("ESTIMATOR_STATUS", 0.5f);
-        configure_stream("EXTENDED_SYS_STATE", 1.0f);
-        configure_stream("GLOBAL_POSITION_INT", 1.0f);
-        configure_stream("GPS_RAW_INT", 1.0f);
-/*        configure_stream("HIGHRES_IMU", 1.5f);  */
-        configure_stream("HOME_POSITION", 0.5f);
-        configure_stream("LOCAL_POSITION_NED", 1.0f);
-        configure_stream("NAMED_VALUE_FLOAT", 1.0f);
-        configure_stream("NAV_CONTROLLER_OUTPUT", 1.0f);
-        configure_stream("OPTICAL_FLOW_RAD", 1.0f);
-        configure_stream("PING", 0.1f);
-        configure_stream("POSITION_TARGET_LOCAL_NED", 1.0f);
-        configure_stream("POSITION_TARGET_GLOBAL_INT", 1.0f);
-        configure_stream("RC_CHANNELS", 1.0f);
-        configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);
+		//mavlink2.0网址
+		//https://mavlink.io/en/messages/common.html
+
+        configure_stream("ALTITUDE", 2.0f); //高度数据
+        configure_stream("ATTITUDE", 5.0f); //姿态数据
+        configure_stream("ESTIMATOR_STATUS", 1.5f);
+        configure_stream("EXTENDED_SYS_STATE", 1.0f); //一些系统状态
+        configure_stream("GLOBAL_POSITION_INT", 1.0f); //全球坐标
+        configure_stream("GPS_RAW_INT", 0.2f);  //gps数据
+        configure_stream("HIGHRES_IMU", 1.0f);  //IMU数据
+        configure_stream("HOME_POSITION", 0.2f); //HOME点数据
+        configure_stream("LOCAL_POSITION_NED", 1.0f); //NED数据
+
+        configure_stream("POSITION_TARGET_LOCAL_NED", 1.0f); //期望的位置
+        configure_stream("POSITION_TARGET_GLOBAL_INT", 1.0f); //期望的位置
+        //configure_stream("RC_CHANNELS", 1.0f);
+        //configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);
         configure_stream("SYS_STATUS", 1.0f);
-        configure_stream("VFR_HUD", 1.0f);
-        configure_stream("VISION_POSITION_ESTIMATE", 1.0f);
-        configure_stream("WIND_COV", 0.5f);
+        //configure_stream("VISION_POSITION_ESTIMATE", 1.0f);
+
+		//configure_stream("NAV_CONTROLLER_OUTPUT", 1.0f); //固定翼的
+        //configure_stream("OPTICAL_FLOW_RAD", 1.0f); //光流数据
+        //configure_stream("PING", 0.1f);
+	    //configure_stream("ATTITUDE_TARGET", 2.0f);  //期望的姿态目标
+        //configure_stream("CAMERA_IMAGE_CAPTURED");  //相机
+		//configure_stream("DISTANCE_SENSOR", 0.5f);
+
+		//没人发布的消息
+		//configure_stream("COLLISION");
+		//configure_stream("DEBUG", 1.0f);
+		//configure_stream("DEBUG_VECT", 1.0f);
+		//configure_stream("NAMED_VALUE_FLOAT", 1.0f);
 
         break;
 
@@ -2052,8 +2056,8 @@ Mavlink::task_main(int argc, char *argv[])
 	//通过参数SYS_COMPANION配置成companion进入这个模式，利用这个模式以及telem2进行主从之间的通信
     case MAVLINK_MODE_ONBOARD:  //使用companion时会进入这一模式,设置第二数传进入这个模式
 
-        configure_stream("PING", 1.0f);
-		configure_stream("FOLLOW_TARGET", 50.0f);
+        //configure_stream("PING", 1.0f);
+		configure_stream("FOLLOW_TARGET", 60.0f);//这个数据太多了 换
         break;
 
 	case MAVLINK_MODE_OSD:
