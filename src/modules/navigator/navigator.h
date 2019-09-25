@@ -71,6 +71,7 @@
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_local_position.h>
+#include <uORB/topics/formation_type.h>
 #include <uORB/uORB.h>
 
 /**
@@ -274,8 +275,9 @@ private:
 	int		_fw_pos_ctrl_status_sub{-1};	/**< notification of vehicle capabilities updates */
 	int		_global_pos_sub{-1};		/**< global position subscription */
 	int		_gps_pos_sub{-1};		/**< gps position subscription */
-	int		_home_pos_sub{-1};		/**< home position subscription */
+	int		_home_pos_sub{-1};		/**< home position subscription */	
 	int		_land_detected_sub{-1};		/**< vehicle land detected subscription */
+	int     _formation_type_sub{-1};
 	int		_local_pos_sub{-1};		/**< local position subscription */
 	int		_offboard_mission_sub{-1};	/**< offboard mission subscription */
 	int		_param_update_sub{-1};		/**< param update subscription */
@@ -298,6 +300,8 @@ private:
 	vehicle_global_position_s			_global_pos{};		/**< global vehicle position */
 	vehicle_gps_position_s				_gps_pos{};		/**< gps position */
 	vehicle_land_detected_s				_land_detected{};	/**< vehicle land_detected */
+	formation_type_s                    _formation{};
+	formation_type_s                    _formation_pre{};
 	vehicle_local_position_s			_local_pos{};		/**< local vehicle position */
 	vehicle_status_s				_vstatus{};		/**< vehicle status */
 	uint8_t					_previous_nav_state{}; /**< nav_state of the previous iteration*/
@@ -341,6 +345,7 @@ private:
 		(ParamFloat<px4::params::NAV_MC_ALT_RAD>)
 		_param_mc_alt_acceptance_radius,	/**< acceptance radius for multicopter altitude */
 		(ParamInt<px4::params::NAV_FORCE_VT>) _param_force_vtol,	/**< acceptance radius for multicopter altitude */
+		(ParamInt<px4::params::MAV_SYS_ID>) _param_vehicle_id,
 		(ParamInt<px4::params::NAV_TRAFF_AVOID>) _param_traffic_avoidance_mode,	/**< avoiding other aircraft is enabled */
 
 		// non-navigator parameters
@@ -358,6 +363,7 @@ private:
 	float _mission_cruising_speed_mc{-1.0f};
 	float _mission_cruising_speed_fw{-1.0f};
 	float _mission_throttle{-1.0f};
+	int   _vcmd_second{0};
 
 	// update subscriptions
 	void		fw_pos_ctrl_status_update(bool force = false);
@@ -367,6 +373,7 @@ private:
 	void		local_position_update();
 	void		params_update();
 	void		vehicle_land_detected_update();
+	uint8_t     formation_type_update();
 	void		vehicle_status_update();
 
 	/**

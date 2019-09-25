@@ -67,6 +67,7 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/transponder_report.h>
 #include <uORB/uORB.h>
+#include <commander/px4_custom_mode.h>
 
 /**
  * navigator app start / stop handling function
@@ -167,6 +168,120 @@ Navigator::vehicle_land_detected_update()
 	orb_copy(ORB_ID(vehicle_land_detected), _land_detected_sub, &_land_detected);
 }
 
+uint8_t
+Navigator::formation_type_update()
+{
+	_formation_pre=_formation;
+	orb_copy(ORB_ID(formation_type), _formation_type_sub, &_formation);
+
+	if(_formation_pre.start_end==_formation.start_end){
+		//重复命令
+		return 0;
+	}
+
+	vehicle_command_s vcmd;
+
+	if(_formation.start_end==1)//开始编队
+	{	
+		if(_param_vehicle_id.get()==1)//1号主机切mision
+		{
+			vcmd.param1 = 213;
+			vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
+			vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_MISSION;
+			vcmd.param4 = 0;
+			vcmd.param5 = 0;
+			vcmd.param6 = 0;
+			vcmd.param7 = 0;
+			vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
+			mavlink_log_info(&_mavlink_log_pub, "开始编队：主机切mission"); 
+		}
+		else{ //其他从机			
+			_vcmd_second++;
+
+			if(_vcmd_second<3){
+				vcmd.param1 = 213;
+				vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
+				vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF;
+				vcmd.param4 = 0;
+				vcmd.param5 = 0;
+				vcmd.param6 = 0;
+				vcmd.param7 = 0;
+				vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
+				mavlink_log_info(&_mavlink_log_pub, "开始编队：从机切takeoff"); 
+			}
+			
+			if(_vcmd_second>300){
+				_vcmd_second=0;//从机切换结束
+				
+				vcmd.param1 = 213;
+				vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
+				vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET;
+				vcmd.param4 = 0;
+				vcmd.param5 = 0;
+				vcmd.param6 = 0;
+				vcmd.param7 = 0;
+				vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;		
+				mavlink_log_info(&_mavlink_log_pub, "开始编队：从机切follow"); 		
+			}
+
+		}
+
+
+		vcmd.timestamp = hrt_absolute_time();
+		vcmd.source_system = _vstatus.system_id;
+		vcmd.source_component = _vstatus.component_id;
+		vcmd.target_system = _vstatus.system_id;
+		vcmd.target_component  = _vstatus.component_id;
+		vcmd.confirmation = 1;
+
+		if (_vehicle_cmd_pub == nullptr) {
+			_vehicle_cmd_pub = orb_advertise(ORB_ID(vehicle_command), &vcmd);
+
+		} else {
+			orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, &vcmd);
+		}
+
+		return 1;
+	}
+	else if(_formation.start_end==3)//结束编队 切换到返航
+	{
+		vcmd.param1 = 213;
+		vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
+		vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_RTL;
+		vcmd.param4 = 0;
+		vcmd.param5 = 0;
+		vcmd.param6 = 0;
+		vcmd.param7 = 0;
+		vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
+
+		vcmd.timestamp = hrt_absolute_time();
+		vcmd.source_system = _vstatus.system_id;
+		vcmd.source_component = _vstatus.component_id;
+		vcmd.target_system = _vstatus.system_id;
+		vcmd.target_component  = _vstatus.component_id;
+		vcmd.confirmation = 1;
+
+		if (_vehicle_cmd_pub == nullptr) {
+			_vehicle_cmd_pub = orb_advertise(ORB_ID(vehicle_command), &vcmd);
+
+		} else {
+			orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, &vcmd);
+		}
+
+		mavlink_log_info(&_mavlink_log_pub, "结束编队：所有飞机切rtl");
+
+		return 1;
+
+
+	}
+	else{
+		return 1;
+	}
+
+
+}
+
+
 void
 Navigator::params_update()
 {
@@ -196,6 +311,7 @@ Navigator::run()
 	_fw_pos_ctrl_status_sub = orb_subscribe(ORB_ID(fw_pos_ctrl_status));
 	_vstatus_sub = orb_subscribe(ORB_ID(vehicle_status));
 	_land_detected_sub = orb_subscribe(ORB_ID(vehicle_land_detected));
+	_formation_type_sub= orb_subscribe(ORB_ID(formation_type));
 	_home_pos_sub = orb_subscribe(ORB_ID(home_position));
 	_offboard_mission_sub = orb_subscribe(ORB_ID(mission));
 	_param_update_sub = orb_subscribe(ORB_ID(parameter_update));
@@ -205,6 +321,7 @@ Navigator::run()
 	/* copy all topics first time */
 	vehicle_status_update();
 	vehicle_land_detected_update();
+	formation_type_update();
 	global_position_update();
 	local_position_update();
 	gps_position_update();
@@ -292,6 +409,21 @@ Navigator::run()
 			vehicle_land_detected_update();
 		}
 
+
+		//根据FORMATION_TYPE mavlink消息，开发编队的开始与结束：开始的时候主机切mission解锁，从机先切takeoff 再切换 再切folllw_target
+
+		//mavlink_log_info(&_mavlink_log_pub, "wanggen---11--"); //打印可用
+
+		orb_check(_formation_type_sub, &updated);
+
+		if (updated || (_vcmd_second>300) ) { //虽然没更新 但是说明了从机切takeoff了，从机还没切换 继续进入
+			formation_type_update();
+		}
+
+		if(_vcmd_second>0){
+			_vcmd_second++;
+		}
+		
 		/* navigation capabilities updated */
 		orb_check(_fw_pos_ctrl_status_sub, &updated);
 
@@ -781,6 +913,7 @@ Navigator::run()
 	orb_unsubscribe(_fw_pos_ctrl_status_sub);
 	orb_unsubscribe(_vstatus_sub);
 	orb_unsubscribe(_land_detected_sub);
+	orb_unsubscribe(_formation_type_sub);	
 	orb_unsubscribe(_home_pos_sub);
 	orb_unsubscribe(_offboard_mission_sub);
 	orb_unsubscribe(_param_update_sub);
