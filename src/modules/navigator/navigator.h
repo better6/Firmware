@@ -304,6 +304,7 @@ private:
 	formation_type_s                    _formation_pre{};
 	vehicle_local_position_s			_local_pos{};		/**< local vehicle position */
 	vehicle_status_s				_vstatus{};		/**< vehicle status */
+	vehicle_command_s              vcmd{};
 	uint8_t					_previous_nav_state{}; /**< nav_state of the previous iteration*/
 	// Publications
 	geofence_result_s				_geofence_result{};
@@ -373,7 +374,7 @@ private:
 	void		local_position_update();
 	void		params_update();
 	void		vehicle_land_detected_update();
-	uint8_t     formation_type_update();
+	void             formation_vcmd(uint8_t order );
 	void		vehicle_status_update();
 
 	/**

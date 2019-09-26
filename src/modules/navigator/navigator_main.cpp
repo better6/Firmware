@@ -168,37 +168,25 @@ Navigator::vehicle_land_detected_update()
 	orb_copy(ORB_ID(vehicle_land_detected), _land_detected_sub, &_land_detected);
 }
 
-uint8_t
-Navigator::formation_type_update()
+void
+Navigator::formation_vcmd(uint8_t order )
 {
-	_formation_pre=_formation;
-	orb_copy(ORB_ID(formation_type), _formation_type_sub, &_formation);
-
-	if(_formation_pre.start_end==_formation.start_end){
-		//重复命令
-		return 0;
-	}
-
-	vehicle_command_s vcmd;
-
-	if(_formation.start_end==1)//开始编队
-	{	
-		if(_param_vehicle_id.get()==1)//1号主机切mision
+	if(order==1)//开始编队
+	{
+		if(_param_vehicle_id.get()==1)//1号主机编队切mision
 		{
-			vcmd.param1 = 213;
-			vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
-			vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_MISSION;
-			vcmd.param4 = 0;
-			vcmd.param5 = 0;
-			vcmd.param6 = 0;
-			vcmd.param7 = 0;
-			vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
-			mavlink_log_info(&_mavlink_log_pub, "开始编队：主机切mission"); 
+				vcmd.param1 = 213;
+				vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
+				vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_MISSION;
+				vcmd.param4 = 0;
+				vcmd.param5 = 0;
+				vcmd.param6 = 0;
+				vcmd.param7 = 0;
+				vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
+				mavlink_log_info(&_mavlink_log_pub, "#开始编队：主机切mission"); 
+				//warnx("接收到开始编队 主机切misison");
 		}
-		else{ //其他从机			
-			_vcmd_second++;
-
-			if(_vcmd_second<3){
+		else{//从机编队先切takeoff 后切follow
 				vcmd.param1 = 213;
 				vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
 				vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF;
@@ -207,26 +195,9 @@ Navigator::formation_type_update()
 				vcmd.param6 = 0;
 				vcmd.param7 = 0;
 				vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
-				mavlink_log_info(&_mavlink_log_pub, "开始编队：从机切takeoff"); 
-			}
-			
-			if(_vcmd_second>300){
-				_vcmd_second=0;//从机切换结束
-				
-				vcmd.param1 = 213;
-				vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
-				vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET;
-				vcmd.param4 = 0;
-				vcmd.param5 = 0;
-				vcmd.param6 = 0;
-				vcmd.param7 = 0;
-				vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;		
-				mavlink_log_info(&_mavlink_log_pub, "开始编队：从机切follow"); 		
-			}
-
+				mavlink_log_info(&_mavlink_log_pub, "#开始编队：从机切takeoff"); 
+				//warnx("接收到开始编队 从机切takeoff");
 		}
-
-
 		vcmd.timestamp = hrt_absolute_time();
 		vcmd.source_system = _vstatus.system_id;
 		vcmd.source_component = _vstatus.component_id;
@@ -241,9 +212,8 @@ Navigator::formation_type_update()
 			orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, &vcmd);
 		}
 
-		return 1;
 	}
-	else if(_formation.start_end==3)//结束编队 切换到返航
+	else if(order==3)//结束编队所有飞机切rtl
 	{
 		vcmd.param1 = 213;
 		vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
@@ -267,18 +237,71 @@ Navigator::formation_type_update()
 		} else {
 			orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, &vcmd);
 		}
+		mavlink_log_info(&_mavlink_log_pub, "#结束编队：所有飞机切rtl");
+		//warnx("接收到结束编队 所有切rtl");
 
-		mavlink_log_info(&_mavlink_log_pub, "结束编队：所有飞机切rtl");
+	}
+	else if(order==4){//开始编队 从机切follow
+		if(_param_vehicle_id.get()!=1){//从机切
 
-		return 1;
+			vcmd.param1 = 213;
+			vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
+			vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET;
+			vcmd.param4 = 0;
+			vcmd.param5 = 0;
+			vcmd.param6 = 0;
+			vcmd.param7 = 0;
+			vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;		
+			mavlink_log_info(&_mavlink_log_pub, "开始编队：从机切follow"); 	
+			
+			vcmd.timestamp = hrt_absolute_time();
+			vcmd.source_system = _vstatus.system_id;
+			vcmd.source_component = _vstatus.component_id;
+			vcmd.target_system = _vstatus.system_id;
+			vcmd.target_component  = _vstatus.component_id;
+			vcmd.confirmation = 1;
 
+			if (_vehicle_cmd_pub == nullptr) {
+				_vehicle_cmd_pub = orb_advertise(ORB_ID(vehicle_command), &vcmd);
 
+			} else {
+				orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, &vcmd);
+				_vcmd_second=0;
+				//warnx("开始编队后 从机切follow");
+			}
+		}
+		
+
+	}
+	else if(order==5)//开始编队 解锁
+	{
+		vcmd.param1 = 1.0f;
+		vcmd.param2 = 0;
+		vcmd.param3 = 0;
+		vcmd.param4 = 0;
+		vcmd.param5 = 0;
+		vcmd.param6 = 0;
+		vcmd.param7 = 0;
+		vcmd.command = vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM;
+
+		vcmd.timestamp = hrt_absolute_time();
+		vcmd.source_system = _vstatus.system_id;
+		vcmd.source_component = _vstatus.component_id;
+		vcmd.target_system = _vstatus.system_id;
+		vcmd.target_component  = _vstatus.component_id;
+		vcmd.confirmation = 1;
+
+		if (_vehicle_cmd_pub == nullptr) {
+			_vehicle_cmd_pub = orb_advertise(ORB_ID(vehicle_command), &vcmd);
+		} else {
+			orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, &vcmd);
+		}
+		//warnx("接收到开始编队 所有飞机解锁");
 	}
 	else{
-		return 1;
+
 	}
-
-
+	
 }
 
 
@@ -321,7 +344,6 @@ Navigator::run()
 	/* copy all topics first time */
 	vehicle_status_update();
 	vehicle_land_detected_update();
-	formation_type_update();
 	global_position_update();
 	local_position_update();
 	gps_position_update();
@@ -416,12 +438,53 @@ Navigator::run()
 
 		orb_check(_formation_type_sub, &updated);
 
-		if (updated || (_vcmd_second>300) ) { //虽然没更新 但是说明了从机切takeoff了，从机还没切换 继续进入
-			formation_type_update();
+		if (updated) { //地面站有编队信息发过来
+		
+				_formation_pre=_formation;
+
+				orb_copy(ORB_ID(formation_type), _formation_type_sub, &_formation);
+
+				if(_formation.start_end==1)//开始编队
+				{				
+					if(_formation.start_end!=_formation_pre.start_end)//第一次切开始编队
+					{	
+						formation_vcmd(5);//先解锁所有的飞机
+						//warnx("第一次接收到 开始编队");
+						_vcmd_second++;
+					}
+					else{
+						warnx("重复接收到 开始编队，忽略不执行");
+					}
+				}
+				else if(_formation.start_end==3)//结束编队
+				{	
+					//warnx("接收到 结束编队");
+					formation_vcmd(3);
+				}
+				else{
+					//编队的实现在follow_target.cpp中实现，这里只切换模式实现开始编队和结束编队
+				}
+
+
 		}
 
-		if(_vcmd_second>0){
+		if(_vcmd_second>0)//已经开始编队 已经切换模式
+		{
 			_vcmd_second++;
+			//warnx("_vcmd_second=%d",_vcmd_second);
+
+			if(_vcmd_second<3){
+				formation_vcmd(5);
+			}
+
+			else if((_vcmd_second<8)&&(_vcmd_second>5)){
+				formation_vcmd(1);//开始编队 切模式
+			}
+			
+			else if(_vcmd_second>100){//解锁很久了 从机还需要再切一次follow
+				formation_vcmd(4);
+				//_vcmd_second这里面有清零
+			}
 		}
 		
 		/* navigation capabilities updated */
@@ -556,7 +619,6 @@ Navigator::run()
 				 * use MAV_CMD_MISSION_START to start the mission there
 				 */
 				if (_mission.land_start()) {
-					vehicle_command_s vcmd = {};
 					vcmd.command = vehicle_command_s::VEHICLE_CMD_MISSION_START;
 					vcmd.param1 = _mission.get_land_start_index();
 					publish_vehicle_cmd(&vcmd);
@@ -1214,8 +1276,7 @@ void Navigator::check_traffic()
 							// set the return altitude to minimum
 							_rtl.set_return_alt_min(true);
 
-							// ask the commander to execute an RTL
-							vehicle_command_s vcmd = {};
+							// ask the commander to execute an RTL							
 							vcmd.command = vehicle_command_s::VEHICLE_CMD_NAV_RETURN_TO_LAUNCH;
 							publish_vehicle_cmd(&vcmd);
 							break;
@@ -1359,35 +1420,35 @@ Navigator::set_mission_failure(const char *reason)
 }
 
 void
-Navigator::publish_vehicle_cmd(vehicle_command_s *vcmd)
+Navigator::publish_vehicle_cmd(vehicle_command_s *cmd)
 {
-	vcmd->timestamp = hrt_absolute_time();
-	vcmd->source_system = _vstatus.system_id;
-	vcmd->source_component = _vstatus.component_id;
-	vcmd->target_system = _vstatus.system_id;
-	vcmd->confirmation = false;
-	vcmd->from_external = false;
+	cmd->timestamp = hrt_absolute_time();
+	cmd->source_system = _vstatus.system_id;
+	cmd->source_component = _vstatus.component_id;
+	cmd->target_system = _vstatus.system_id;
+	cmd->confirmation = false;
+	cmd->from_external = false;
 
 	// The camera commands are not processed on the autopilot but will be
 	// sent to the mavlink links to other components.
-	switch (vcmd->command) {
+	switch (cmd->command) {
 	case NAV_CMD_IMAGE_START_CAPTURE:
 	case NAV_CMD_IMAGE_STOP_CAPTURE:
 	case NAV_CMD_VIDEO_START_CAPTURE:
 	case NAV_CMD_VIDEO_STOP_CAPTURE:
-		vcmd->target_component = 100; // MAV_COMP_ID_CAMERA
+		cmd->target_component = 100; // MAV_COMP_ID_CAMERA
 		break;
 
 	default:
-		vcmd->target_component = _vstatus.component_id;
+		cmd->target_component = _vstatus.component_id;
 		break;
 	}
 
 	if (_vehicle_cmd_pub != nullptr) {
-		orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, vcmd);
+		orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, cmd);
 
 	} else {
-		_vehicle_cmd_pub = orb_advertise_queue(ORB_ID(vehicle_command), vcmd, vehicle_command_s::ORB_QUEUE_LENGTH);
+		_vehicle_cmd_pub = orb_advertise_queue(ORB_ID(vehicle_command), cmd, vehicle_command_s::ORB_QUEUE_LENGTH);
 	}
 }
 
