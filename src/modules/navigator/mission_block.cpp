@@ -65,7 +65,7 @@ bool
 MissionBlock::is_mission_item_reached()
 {
 	/* handle non-navigation or indefinite waypoints */
-
+	//mavlink_log_info(&_mavlink_log_pub,"----nav=%d",_mission_item.nav_cmd);
 	switch (_mission_item.nav_cmd) {
 	case NAV_CMD_DO_SET_SERVO:
 		return true;
