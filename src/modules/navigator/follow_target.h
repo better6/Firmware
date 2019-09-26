@@ -50,6 +50,8 @@
 #include <uORB/topics/follow_target.h>
 #include <uORB/topics/formation_type.h>
 
+#include <systemlib/mavlink_log.h>
+
 class FollowTarget : public MissionBlock, public ModuleParams
 {
 
@@ -127,6 +129,7 @@ private:
 
 	int _follow_target_sub{-1};
 	int _formation_type_sub{-1};
+	orb_advert_t	_mavlink_log_pub{nullptr};
 	float _step_time_in_ms{0.0f};
 
 	formation_type_s _formation{0};

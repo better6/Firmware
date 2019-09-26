@@ -48,6 +48,8 @@
 
 #include <systemlib/err.h>
 
+#include <systemlib/mavlink_log.h>
+
 #include <uORB/uORB.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/follow_target.h>
@@ -137,6 +139,7 @@ void FollowTarget::on_active()
 //2. 对主机位置指令进行滤波 得到主机的滤波后的位置_curr_master_pos
 	if (updated) {
 
+		mavlink_log_info(&_mavlink_log_pub, "wanggen----------"); 
 		//编队实现
 		formation_pre();
 
