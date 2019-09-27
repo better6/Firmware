@@ -1597,8 +1597,11 @@ MulticopterPositionControl::vel_sp_slewrate()
 	/* limit total horizontal acceleration */
 	if (acc_xy.length() > _acceleration_state_dependent_xy) {
 		vel_sp_xy = _acceleration_state_dependent_xy * acc_xy.normalized() * _dt + vel_sp_prev_xy;
-		_vel_sp(0) = vel_sp_xy(0);
-		_vel_sp(1) = vel_sp_xy(1);
+		//定点模式摇杆回中刹车停下时飞机抖动，或者其他模式mision和rtl到达航点后姿态抖动，的bug问题屏蔽这两句代码有用！！！具体原因没分析。
+		//////////////////////////////////////////////
+		// _vel_sp(0) = vel_sp_xy(0);//代码有bug
+		// _vel_sp(1) = vel_sp_xy(1);
+		/////////////////////////////////////////////
 	}
 
 	/* limit vertical acceleration */
@@ -3144,7 +3147,7 @@ MulticopterPositionControl::task_main()
 			} else if (_vehicle_status.nav_state == _vehicle_status.NAVIGATION_STATE_MANUAL ||
 				   _vehicle_status.nav_state == _vehicle_status.NAVIGATION_STATE_POSCTL ||
 				   _vehicle_status.nav_state == _vehicle_status.NAVIGATION_STATE_ALTCTL) {
-
+					
 
 				_control.updateState(_local_pos, matrix::Vector3f(&(_vel_err_d(0))));
 				_control.updateSetpoint(setpoint);
