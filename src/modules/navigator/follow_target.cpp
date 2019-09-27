@@ -382,7 +382,11 @@ void FollowTarget::on_active()
 	//从机保持悬停等待中，如果主机位子信息有效了 则进入位置跟踪
 	case WAIT_FOR_TARGET_POSITION: {
 
-			if (is_mission_item_reached() && target_velocity_valid()) {
+			////////////////////////
+			//这里有一个bug，不知道算不算bug，有时候从机切folow不跟随 经过跟踪是因为is_mission_item_reached()无效，里面nav_cmd=0(NAV_CMD_IDLE)
+			//有时候切follow有效，知道原因在这里 可以的时候是怎样的情况 还没跟踪
+			//if (is_mission_item_reached() && target_velocity_valid()) {
+			if (target_position_valid() && target_velocity_valid()) {
 				_target_position_offset(0) = _param_follow_dis; //记录下跟随距离的参数
 				_follow_target_state = TRACK_POSITION; //目标位置有效了，进入跟随位置，如果位置没有效 代码保持在这里 从机保持悬停
 			}
@@ -504,7 +508,7 @@ void FollowTarget::formation_pre()
 	else{
 
 	}
-
+	//_param_follow_side=_param_tracking_side.get(); //重新获取方位参数
 	//重新赋值旋转矩阵
 	_rot_matrix = (_follow_position_matricies[_param_follow_side]);
 

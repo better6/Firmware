@@ -2020,18 +2020,18 @@ Mavlink::task_main(int argc, char *argv[])
 		//mavlink2.0网址
 		//https://mavlink.io/en/messages/common.html
 
-        configure_stream("ALTITUDE", 3.0f); //高度数据
-        configure_stream("ATTITUDE", 5.0f); //姿态数据
+        configure_stream("ALTITUDE", 1.0f); //高度数据
+        configure_stream("ATTITUDE", 3.0f); //姿态数据
         configure_stream("ESTIMATOR_STATUS", 1.0f);
         configure_stream("EXTENDED_SYS_STATE", 1.0f); //一些系统状态
-        configure_stream("GLOBAL_POSITION_INT", 1.0f); //全球坐标
+        configure_stream("GLOBAL_POSITION_INT", 3.0f); //全球坐标
         configure_stream("GPS_RAW_INT", 0.2f);  //gps数据
-        configure_stream("HIGHRES_IMU", 1.0f);  //IMU数据
-        configure_stream("HOME_POSITION", 0.2f); //HOME点数据
-        configure_stream("LOCAL_POSITION_NED", 5.0f); //NED数据
+        configure_stream("HIGHRES_IMU", 3.0f);  //IMU数据
+        configure_stream("HOME_POSITION", 0.1f); //HOME点数据
+        configure_stream("LOCAL_POSITION_NED", 2.0f); //NED数据
 
-        configure_stream("POSITION_TARGET_LOCAL_NED", 0.2f); //期望的位置
-        configure_stream("POSITION_TARGET_GLOBAL_INT", 0.2f); //期望的位置
+        //configure_stream("POSITION_TARGET_LOCAL_NED", 0.2f); //期望的位置
+        //configure_stream("POSITION_TARGET_GLOBAL_INT", 0.2f); //期望的位置
         //configure_stream("RC_CHANNELS", 1.0f);
         //configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);
         configure_stream("SYS_STATUS", 1.0f);
