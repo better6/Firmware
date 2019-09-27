@@ -298,6 +298,47 @@ Navigator::formation_vcmd(uint8_t order )
 		}
 		//warnx("接收到开始编队 所有飞机解锁");
 	}
+	else if(order==6)//第二次切开始编队
+	{
+		if(_param_vehicle_id.get()==1)//1号主机编队切mision
+		{
+				vcmd.param1 = 213;
+				vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
+				vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_MISSION;
+				vcmd.param4 = 0;
+				vcmd.param5 = 0;
+				vcmd.param6 = 0;
+				vcmd.param7 = 0;
+				vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
+				mavlink_log_info(&_mavlink_log_pub, "#二次开始编队：主机切mission"); 
+				//warnx("二次开始编队 主机切misison");
+		}
+		else{//从机编队先切takeoff 后切follow
+				vcmd.param1 = 213;
+				vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
+				vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET;
+				vcmd.param4 = 0;
+				vcmd.param5 = 0;
+				vcmd.param6 = 0;
+				vcmd.param7 = 0;
+				vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
+				mavlink_log_info(&_mavlink_log_pub, "#二次开始编队：从机切follow"); 
+				//warnx("二次开始编队 从机切follow");
+		}
+		vcmd.timestamp = hrt_absolute_time();
+		vcmd.source_system = _vstatus.system_id;
+		vcmd.source_component = _vstatus.component_id;
+		vcmd.target_system = _vstatus.system_id;
+		vcmd.target_component  = _vstatus.component_id;
+		vcmd.confirmation = 1;
+
+		if (_vehicle_cmd_pub == nullptr) {
+			_vehicle_cmd_pub = orb_advertise(ORB_ID(vehicle_command), &vcmd);
+
+		} else {
+			orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, &vcmd);
+		}
+	}
 	else{
 
 	}
@@ -452,8 +493,9 @@ Navigator::run()
 						//warnx("第一次接收到 开始编队");
 						_vcmd_second++;
 					}
-					else{
-						warnx("重复接收到 开始编队，忽略不执行");
+					else{ //刚刚有在开始编队 现在是第二次切开始编队
+						formation_vcmd(6);//先解锁所有的飞机
+						//warnx("二次开始编队，主机切misison 从机切follow");
 					}
 				}
 				else if(_formation.start_end==3)//结束编队
