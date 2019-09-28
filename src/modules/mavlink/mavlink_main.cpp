@@ -220,7 +220,7 @@ Mavlink::Mavlink() :
 	_forwarding_on(false),
 	_ftp_on(false),
 	_uart_fd(-1),
-	_baudrate(57600),
+	_baudrate(115200),
 	_datarate(1000),
 	_datarate_events(500),
 	_rate_mult(1.0f),
@@ -1739,7 +1739,7 @@ int
 Mavlink::task_main(int argc, char *argv[])
 {
 	int ch;
-	_baudrate = 57600;
+	_baudrate = 115200;
 	_datarate = 0;
 	_mode = MAVLINK_MODE_NORMAL;
 	bool _force_flow_control = false;
