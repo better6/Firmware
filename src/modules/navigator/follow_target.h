@@ -108,8 +108,11 @@ private:
 		{-1.0F,  0.0F, 0.0F,  0.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 180度 follow behind
 		{-1.0F,  1.0F, 0.0F, -1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // -225度 自己添加的左后侧  behind*right 
 		{-1.0F, -1.0F, 0.0F,  1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 135度 自己添加的右后侧   left*behind
-		{ 1.0F, -1.0F, 0.0F,  1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 45都 follow right	
-		{ 1.0F,  1.0F, 0.0F, -1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F} //  -45度 follow left side
+		{ 0.0F, -1.0F, 0.0F,  1.0F,  0.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 90都 follow right	
+		{ 0.0F,  1.0F, 0.0F, -1.0F,  0.0F, 0.0F, 0.0F, 0.0F, 1.0F} //  -90度 follow left sides
+		// { 1.0F, -1.0F, 0.0F,  1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 45都 follow right	
+		// { 1.0F,  1.0F, 0.0F, -1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F} //  -45度 follow left side
+		                                                            
 
 	};
 
