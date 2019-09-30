@@ -61,11 +61,17 @@ MissionBlock::MissionBlock(Navigator *navigator) :
 {
 }
 
+//判断航点是否到达
+//不同航点类型_mission_item.nav_cmd有不同的航点达到的判断条件
+//正常的3d waypoint判断航点是否到达有三个条件：位置是否达到acc_rad、航向是否到达（大部分航点没有航向判断）、悬停时间是否到达
+
 bool
 MissionBlock::is_mission_item_reached()
 {
 	/* handle non-navigation or indefinite waypoints */
 	//mavlink_log_info(&_mavlink_log_pub,"----nav=%d",_mission_item.nav_cmd);
+
+	//1. 判断这些特殊航点的到达
 	switch (_mission_item.nav_cmd) {
 	case NAV_CMD_DO_SET_SERVO:
 		return true;
@@ -119,11 +125,12 @@ MissionBlock::is_mission_item_reached()
 
 	default:
 		/* do nothing, this is a 3D waypoint */
-		break;
+		break;   //如果不是以上种种特殊的航点类型，而是普通的3D waypoint，则下面需要判断下航点是否到达
 	}
 
 	hrt_abstime now = hrt_absolute_time();
 
+	//2. 普通3D waypoint航点达到的判断，如果飞机在执行航点的过程中
 	if (!_navigator->get_land_detected()->landed && !_waypoint_position_reached) {
 
 		float dist = -1.0f;
@@ -139,6 +146,7 @@ MissionBlock::is_mission_item_reached()
 				_navigator->get_global_position()->lon,
 				_navigator->get_global_position()->alt,
 				&dist_xy, &dist_z);
+				//飞机距离目标航点的水平距离和垂直距离，以及两点之间的三维直线距离
 
 		/* FW special case for NAV_CMD_WAYPOINT to achieve altitude via loiter */
 		if (!_navigator->get_vstatus()->is_rotary_wing &&
@@ -174,6 +182,8 @@ MissionBlock::is_mission_item_reached()
 			}
 		}
 
+//3. 下面这些都是判断航点位置有没有到达
+		//3. 如果是旋翼的takeoff航点类型
 		if ((_mission_item.nav_cmd == NAV_CMD_TAKEOFF || _mission_item.nav_cmd == NAV_CMD_VTOL_TAKEOFF)
 		    && _navigator->get_vstatus()->is_rotary_wing) {
 
@@ -195,16 +205,17 @@ MissionBlock::is_mission_item_reached()
 			/* require only altitude for takeoff for multicopter */
 			if (_navigator->get_global_position()->alt >
 			    altitude_amsl - altitude_acceptance_radius) {
-				_waypoint_position_reached = true;
+				_waypoint_position_reached = true; //当前高度大于起飞高度要求 航点到达
 			}
 
+		//NAV_CMD_TAKEOFF航点类型
 		} else if (_mission_item.nav_cmd == NAV_CMD_TAKEOFF) {
 			/* for takeoff mission items use the parameter for the takeoff acceptance radius */
 			if (dist >= 0.0f && dist <= _navigator->get_acceptance_radius()
 			    && dist_z <= _navigator->get_altitude_acceptance_radius()) {
 				_waypoint_position_reached = true;
 			}
-
+		//旋翼的无限悬停
 		} else if (!_navigator->get_vstatus()->is_rotary_wing &&
 			   (_mission_item.nav_cmd == NAV_CMD_LOITER_UNLIMITED ||
 			    _mission_item.nav_cmd == NAV_CMD_LOITER_TIME_LIMIT)) {
@@ -222,7 +233,7 @@ MissionBlock::is_mission_item_reached()
 			} else {
 				_time_first_inside_orbit = 0;
 			}
-
+		//旋翼的在某个高度悬停NAV_CMD_LOITER_TO_ALT
 		} else if (!_navigator->get_vstatus()->is_rotary_wing &&
 			   (_mission_item.nav_cmd == NAV_CMD_LOITER_TO_ALT)) {
 
@@ -273,22 +284,25 @@ MissionBlock::is_mission_item_reached()
 					}
 				}
 			}
-
+		//延时NAV_CMD_DELAY
 		} else if (_mission_item.nav_cmd == NAV_CMD_DELAY) {
 			_waypoint_position_reached = true;
 			_waypoint_yaw_reached = true;
 			_time_wp_reached = now;
-
+//4. 对于正常的waypoint判断是否满足可接受半径_mission_item.acceptance_radius，这是参数来与navigator模块，ACC_RAD也是在navigator里地名义的
 		} else {
 			/* for normal mission items used their acceptance radius */
+			//如果航点自带可接受的半径
 			float mission_acceptance_radius = _navigator->get_acceptance_radius(_mission_item.acceptance_radius);
 
 			/* if set to zero use the default instead */
+			//如果航点没有制定可接受的半径，那就使用默认参数NAV_ACC_RAD
 			if (mission_acceptance_radius < NAV_EPSILON_POSITION) {
 				mission_acceptance_radius = _navigator->get_acceptance_radius();
 			}
 
 			/* for vtol back transition calculate acceptance radius based on time and ground speed */
+			//vtol的
 			if (_mission_item.vtol_back_transition && !_navigator->get_vstatus()->is_rotary_wing) {
 
 				float velocity = sqrtf(_navigator->get_local_position()->vx * _navigator->get_local_position()->vx +
@@ -304,34 +318,39 @@ MissionBlock::is_mission_item_reached()
 
 			}
 
+//5. 普通航点达到判断的依据，距离是否到达，高度是否到达
 			if (dist >= 0.0f && dist <= mission_acceptance_radius
 			    && dist_z <= _navigator->get_altitude_acceptance_radius()) {
-				_waypoint_position_reached = true;
+				_waypoint_position_reached = true; //位置到达
 			}
 		}
 
 		if (_waypoint_position_reached) {
 			// reached just now
-			_time_wp_reached = now;
+			_time_wp_reached = now; //位置到达开始计时_time_wp_reached
 		}
 	}
 
-	/* Check if the waypoint and the requested yaw setpoint. */
+	/* Check if the waypoint and the requested yaw setpoint. 检查航点和偏航设定值 */
 
+//6. 位置到达后 判断航向
 	if (_waypoint_position_reached && !_waypoint_yaw_reached) {
 
 		if ((_navigator->get_vstatus()->is_rotary_wing
 		     || (_mission_item.nav_cmd == NAV_CMD_LOITER_TO_ALT && _mission_item.force_heading))
 		    && PX4_ISFINITE(_mission_item.yaw)) {
 
-			/* check course if defined only for rotary wing except takeoff */
+			/* check course if defined only for rotary wing except takeoff  仅针对旋翼还是takeoff除外*/
+			//计算当前飞机航向
 			float cog = _navigator->get_vstatus()->is_rotary_wing ? _navigator->get_global_position()->yaw : atan2f(
 					    _navigator->get_global_position()->vel_e,
 					    _navigator->get_global_position()->vel_n);
 
+			//与航向设定值之间的偏差
 			float yaw_err = wrap_pi(_mission_item.yaw - cog);
 
-			/* accept yaw if reached or if timeout is set in which case we ignore not forced headings */
+			/* accept yaw if reached 如果航向到达
+			or if timeout is set in which case we ignore not forced headings 时间超时了也是非强制的航向设置*/
 			if (fabsf(yaw_err) < math::radians(_navigator->get_yaw_threshold())
 			    || (_navigator->get_yaw_timeout() >= FLT_EPSILON && !_mission_item.force_heading)) {
 
@@ -342,25 +361,26 @@ MissionBlock::is_mission_item_reached()
 			if (!_waypoint_yaw_reached && _mission_item.force_heading &&
 			    (_navigator->get_yaw_timeout() >= FLT_EPSILON) &&
 			    (now - _time_wp_reached >= (hrt_abstime)_navigator->get_yaw_timeout() * 1e6f)) {
-
+				//航向没有达到，但是是强制的航向设定值，时间已经超时
 				_navigator->set_mission_failure("unable to reach heading within timeout");
 			}
 
-		} else {
+		} else {//其他情况 不判断航向，只有上面的情况判断航向达到：旋翼&&航点航向设置有效&&是强制的航线设置或是在某一高度盘旋，，就是大部分情况已经不判断航向了
 			_waypoint_yaw_reached = true;
 		}
 	}
-
+//7. 位置、航向达到后判断悬停时间
 	/* Once the waypoint and yaw setpoint have been reached we can start the loiter time countdown */
 	if (_waypoint_position_reached && _waypoint_yaw_reached) {
 
 		if (_time_first_inside_orbit == 0) {
-			_time_first_inside_orbit = now;
+			_time_first_inside_orbit = now;//首次进来记录时间，用于判断悬停时间是否达到
 		}
 
 		/* check if the MAV was long enough inside the waypoint orbit */
-		if ((get_time_inside(_mission_item) < FLT_EPSILON) ||
-		    (now - _time_first_inside_orbit >= (hrt_abstime)(get_time_inside(_mission_item) * 1e6f))) {
+		//get_time_inside(_mission_item)这就是我们在地面站设置航点时 设置的到点悬停时间！
+		if ((get_time_inside(_mission_item) < FLT_EPSILON) || //没有设置悬停时间
+		    (now - _time_first_inside_orbit >= (hrt_abstime)(get_time_inside(_mission_item) * 1e6f))) { //或者悬停时间已经到达
 
 			position_setpoint_s &curr_sp = _navigator->get_position_setpoint_triplet()->current;
 			const position_setpoint_s &next_sp = _navigator->get_position_setpoint_triplet()->next;
@@ -368,10 +388,12 @@ MissionBlock::is_mission_item_reached()
 			const float range = get_distance_to_next_waypoint(curr_sp.lat, curr_sp.lon, next_sp.lat, next_sp.lon);
 
 			// exit xtrack location
-			// reset lat/lon of loiter waypoint so vehicle follows a tangent
+			// reset lat/lon of loiter waypoint so vehicle follows a tangent			
 			if (_mission_item.loiter_exit_xtrack && next_sp.valid && PX4_ISFINITE(range) &&
 			    (_mission_item.nav_cmd == NAV_CMD_LOITER_TIME_LIMIT ||
 			     _mission_item.nav_cmd == NAV_CMD_LOITER_TO_ALT)) {
+
+			    warnx("已经仿真测试 普通的3d waypoint不会进来");
 
 				float bearing = get_bearing_to_next_waypoint(curr_sp.lat, curr_sp.lon, next_sp.lat, next_sp.lon);
 				float inner_angle = M_PI_2_F - asinf(_mission_item.loiter_radius / range);
@@ -388,8 +410,10 @@ MissionBlock::is_mission_item_reached()
 				waypoint_from_heading_and_distance(curr_sp.lat, curr_sp.lon,
 								   bearing, curr_sp.loiter_radius,
 								   &curr_sp.lat, &curr_sp.lon);
-			}
 
+				//仿真实测 普通的3d waypoint不会进来！
+				//warnx("%3.1f\n\n",(double)bearing*57.3);
+			}
 			return true;
 		}
 	}
