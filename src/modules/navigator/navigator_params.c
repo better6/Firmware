@@ -67,7 +67,7 @@ PARAM_DEFINE_FLOAT(NAV_LOITER_RAD, 50.0f);
  * @increment 0.5
  * @group Mission
  */
-PARAM_DEFINE_FLOAT(NAV_ACC_RAD, 10.0f);
+PARAM_DEFINE_FLOAT(NAV_ACC_RAD, 10.0f); //misison模式下飞机“到点”可以接受的半径
 
 /**
  * FW Altitude Acceptance Radius
