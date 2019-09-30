@@ -50,7 +50,7 @@
  * @increment 0.01
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_THR_MIN, 0.12f);
+PARAM_DEFINE_FLOAT(MPC_THR_MIN, 0.12f);  //自动模式下的最小油门
 
 /**
  * Hover thrust
@@ -69,7 +69,7 @@ PARAM_DEFINE_FLOAT(MPC_THR_MIN, 0.12f);
  * @increment 0.01
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_THR_HOVER, 0.5f);
+PARAM_DEFINE_FLOAT(MPC_THR_HOVER, 0.5f); //悬停油门，定高定点的中位
 
 /**
  * Maximum thrust in auto thrust control
@@ -83,7 +83,7 @@ PARAM_DEFINE_FLOAT(MPC_THR_HOVER, 0.5f);
  * @increment 0.01
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_THR_MAX, 1.0f);
+PARAM_DEFINE_FLOAT(MPC_THR_MAX, 1.0f);  //自动模式下的最大油门
 
 /**
  * Minimum manual thrust
@@ -98,7 +98,7 @@ PARAM_DEFINE_FLOAT(MPC_THR_MAX, 1.0f);
  * @increment 0.01
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_MANTHR_MIN, 0.08f);
+PARAM_DEFINE_FLOAT(MPC_MANTHR_MIN, 0.08f);  //自动模式下的油门 关键词：THR  手动模式下油门的关键词：MANTHR
 
 /**
  * Maximum manual thrust
@@ -167,7 +167,7 @@ PARAM_DEFINE_FLOAT(MPC_Z_VEL_D, 0.0f);
  * @decimal 1
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_Z_VEL_MAX_UP, 3.0f);
+PARAM_DEFINE_FLOAT(MPC_Z_VEL_MAX_UP, 3.0f); //z轴最大的上升速度
 
 /**
  * Maximum vertical descent velocity
@@ -179,7 +179,7 @@ PARAM_DEFINE_FLOAT(MPC_Z_VEL_MAX_UP, 3.0f);
  * @max 4.0
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_Z_VEL_MAX_DN, 1.0f);
+PARAM_DEFINE_FLOAT(MPC_Z_VEL_MAX_DN, 1.0f); //z轴最大的下降速度
 
 /**
  * Proportional gain for horizontal position error
@@ -237,7 +237,7 @@ PARAM_DEFINE_FLOAT(MPC_XY_VEL_D, 0.01f);
  * @decimal 2
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_XY_CRUISE, 5.0f);
+PARAM_DEFINE_FLOAT(MPC_XY_CRUISE, 5.0f); //自动模式下的速度
 
 /**
  * Cruise speed when angle prev-current/current-next setpoint
@@ -253,7 +253,7 @@ PARAM_DEFINE_FLOAT(MPC_XY_CRUISE, 5.0f);
  * @decimal 2
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_CRUISE_90, 3.0f);
+PARAM_DEFINE_FLOAT(MPC_CRUISE_90, 3.0f);  //90度航点时候的巡航速度
 
 /**
  * Maximum horizontal velocity setpoint for manual controlled mode
@@ -267,7 +267,7 @@ PARAM_DEFINE_FLOAT(MPC_CRUISE_90, 3.0f);
  * @decimal 2
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_VEL_MANUAL, 10.0f);
+PARAM_DEFINE_FLOAT(MPC_VEL_MANUAL, 10.0f); //手动模式下最大速度
 
 /**
  * Maximum horizontal velocity
@@ -282,7 +282,7 @@ PARAM_DEFINE_FLOAT(MPC_VEL_MANUAL, 10.0f);
  * @decimal 2
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_XY_VEL_MAX, 12.0f);
+PARAM_DEFINE_FLOAT(MPC_XY_VEL_MAX, 12.0f);  //水平最大的速度  这是所有速度的上限
 
 /**
  * Maximum tilt angle in air
@@ -295,7 +295,7 @@ PARAM_DEFINE_FLOAT(MPC_XY_VEL_MAX, 12.0f);
  * @decimal 1
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_TILTMAX_AIR, 45.0f);
+PARAM_DEFINE_FLOAT(MPC_TILTMAX_AIR, 45.0f); //飞机在空中最大倾斜角
 
 /**
  * Maximum tilt during landing
@@ -406,7 +406,7 @@ PARAM_DEFINE_FLOAT(MPC_VELD_LP, 5.0f);
  * @decimal 2
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_ACC_HOR_MAX, 10.0f);
+PARAM_DEFINE_FLOAT(MPC_ACC_HOR_MAX, 10.0f);  //最大的水平加速度
 
 /**
  * Acceleration for auto and for manual
@@ -419,7 +419,7 @@ PARAM_DEFINE_FLOAT(MPC_ACC_HOR_MAX, 10.0f);
  * @group Multicopter Position Control
  */
 
-PARAM_DEFINE_FLOAT(MPC_ACC_HOR, 5.0f);
+PARAM_DEFINE_FLOAT(MPC_ACC_HOR, 5.0f);  //加速度
 
 /**
  * Slow horizontal manual deceleration for manual mode
@@ -431,7 +431,7 @@ PARAM_DEFINE_FLOAT(MPC_ACC_HOR, 5.0f);
  * @decimal 2
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_DEC_HOR_SLOW, 5.0f);
+PARAM_DEFINE_FLOAT(MPC_DEC_HOR_SLOW, 5.0f);  //减速加速度
 
 /**
  * Horizontal acceleration in manual modes when te estimator speed limit is removed.
@@ -446,7 +446,7 @@ PARAM_DEFINE_FLOAT(MPC_DEC_HOR_SLOW, 5.0f);
  * @decimal 1
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_ACC_HOR_ESTM, 0.5f);
+PARAM_DEFINE_FLOAT(MPC_ACC_HOR_ESTM, 0.5f); //视觉、光溜啥的加速度
 
 /**
  * Maximum vertical acceleration in velocity controlled modes upward
