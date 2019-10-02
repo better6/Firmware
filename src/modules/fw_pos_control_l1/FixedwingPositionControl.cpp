@@ -67,9 +67,9 @@ FixedwingPositionControl::FixedwingPositionControl() :
     _parameter_handles.pitchsp_offset_deg = param_find("FW_PSP_OFF");
 
     _parameter_handles.land_slope_angle = param_find("FW_LND_ANG");
-    _parameter_handles.land_slope_angle1 = param_find("FORMA_PARAM1");
-    _parameter_handles.land_slope_angle2 = param_find("FORMA_PARAM2");
-    _parameter_handles.land_slope_angle3 = param_find("FORMA_PARAM3");
+    _parameter_handles.form_kp = param_find("FORM_KP");
+    _parameter_handles.form_kd = param_find("FORM_KD");
+    _parameter_handles.form_temp = param_find("FORMA_PARAM3");
     _parameter_handles.land_H1_virt = param_find("FW_LND_HVIRT");
     _parameter_handles.land_flare_alt_relative = param_find("FW_LND_FLALT");
     _parameter_handles.land_flare_pitch_min_deg = param_find("FW_LND_FL_PMIN");
@@ -256,17 +256,13 @@ FixedwingPositionControl::parameters_update()
     float land_slope_angle = 0.0f;
     param_get(_parameter_handles.land_slope_angle, &land_slope_angle);
 
-
-        float land_slope_angle1 = 0.0f;
-    param_get(_parameter_handles.land_slope_angle1, &land_slope_angle1);
+    param_get(_parameter_handles.form_kp, &_kp);
     //warnx("---angle1=%2.1f",(double)land_slope_angle1);
 
-        float land_slope_angle2 = 0.0f;
-    param_get(_parameter_handles.land_slope_angle2, &land_slope_angle2);
+    param_get(_parameter_handles.form_kd, &_kd);
    // warnx("----angle2=%2.1f",(double)land_slope_angle2);
 
-        float land_slope_angle3 = 0.0f;
-    param_get(_parameter_handles.land_slope_angle3, &land_slope_angle3);
+    param_get(_parameter_handles.form_temp, &_temp);
    // warnx("---angle3=%2.1f",(double)land_slope_angle3);
 
     float land_flare_alt_relative = 0.0f;
@@ -1480,13 +1476,13 @@ FixedwingPositionControl::control_follow_target(const Vector2f &nav_speed_2d,
 
     //这里要注意差值向量的正负
 
-    float K_P(1.0f); //距离差量的增益值  待办,这个参数要做成地面站可调的,注意,参数为2时3号机也能飞,不建议再继续增大了,下次调试改成1.5试试
-    float K_D(1.0f); //速度差量的增益值  待办,这个参数要做成地面站可调的,注意,这个值先保持1.2,目前问题是当通信频率不高时这个值是否有效
+    // float K_P(1.0f); //距离差量的增益值  待办,这个参数要做成地面站可调的,注意,参数为2时3号机也能飞,不建议再继续增大了,下次调试改成1.5试试
+    // float K_D(1.0f); //速度差量的增益值  待办,这个参数要做成地面站可调的,注意,这个值先保持1.2,目前问题是当通信频率不高时这个值是否有效
 //    Vector2f SP_gndspd_ned_sp = MP_gndspd_ned + MP_gndspd_ned.normalized() * (K_P * dL_PtoPsp_project + K_D * dV_MPtoSP_project); //从机目标地速向量于主机地速向量平行
 
     //新增新的速度控制方法,将速度差量直接加在测量的空速上.
 
-    float airspeed_follow_sp = air_speed_2d.length() + K_P * dL_PtoPsp_project + K_D * dV_MPtoSP_project;
+    float airspeed_follow_sp = air_speed_2d.length() + _kp * dL_PtoPsp_project + _kd * dV_MPtoSP_project;
 
 
 
@@ -2309,6 +2305,8 @@ FixedwingPositionControl::run()
             //            if(INFO_enable_1s) PX4_INFO("_pos_sp_triplet.current.vx = %.1f",double(_pos_sp_triplet.current.vx));
 
 
+            //mavlink_log_info(&_mavlink_log_pub,"kp=%2.1f  kd=%2.1f ",(double)_kp,(double)_kd);
+            
             if (control_position(curr_pos, ground_speed, _pos_sp_triplet.previous, _pos_sp_triplet.current)) {
                 _att_sp.timestamp = hrt_absolute_time();
 

@@ -266,7 +266,7 @@ PARAM_DEFINE_FLOAT(FW_LND_ANG, 5.0f);
  * @increment 0.5
  * @group FW L1 Control
  */
-PARAM_DEFINE_FLOAT(FORMA_PARAM1, 5.0f);
+PARAM_DEFINE_FLOAT(FORM_KP, 1.0f);
 
 /**
  * Landing slope angle
@@ -278,7 +278,7 @@ PARAM_DEFINE_FLOAT(FORMA_PARAM1, 5.0f);
  * @increment 0.5
  * @group FW L1 Control
  */
-PARAM_DEFINE_FLOAT(FORMA_PARAM2, 5.0f);
+PARAM_DEFINE_FLOAT(FORM_KD, 1.0f);
 
 /**
  * Landing slope angle
@@ -290,7 +290,7 @@ PARAM_DEFINE_FLOAT(FORMA_PARAM2, 5.0f);
  * @increment 0.5
  * @group FW L1 Control
  */
-PARAM_DEFINE_FLOAT(FORMA_PARAM3, 5.0f);
+PARAM_DEFINE_FLOAT(FORMA_PARAM3, 1.0f);
 
 /**
  *

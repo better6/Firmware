@@ -253,6 +253,10 @@ Vector2f Psp2A_offset_ned{};
 	float _flare_curve_alt_rel_last{0.0f};
 	float _target_bearing{0.0f};				///< estimated height to ground at which flare started */
 
+	float _kp{1.0f};
+	float _kd{1.0f};
+	float _temp{0.0f};
+
 	bool _was_in_air{false};				///< indicated wether the plane was in the air in the previous interation*/
 	hrt_abstime _time_went_in_air{0};			///< time at which the plane went in the air */
 
@@ -386,9 +390,9 @@ Vector2f Psp2A_offset_ned{};
 		param_t throttle_land_max;
 
 		param_t land_slope_angle;
-		param_t land_slope_angle1;
-		param_t land_slope_angle2;
-		param_t land_slope_angle3;
+		param_t form_kp;
+		param_t form_kd;
+		param_t form_temp;
 		param_t land_H1_virt;
 		param_t land_flare_alt_relative;
 		param_t land_thrust_lim_alt_relative;
