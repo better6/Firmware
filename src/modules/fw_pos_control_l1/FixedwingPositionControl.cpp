@@ -255,7 +255,7 @@ FixedwingPositionControl::parameters_update()
 
     float land_slope_angle = 0.0f;
     param_get(_parameter_handles.land_slope_angle, &land_slope_angle);
-    
+
 
         float land_slope_angle1 = 0.0f;
     param_get(_parameter_handles.land_slope_angle1, &land_slope_angle1);
@@ -285,7 +285,7 @@ FixedwingPositionControl::parameters_update()
 
     _landingslope.update(radians(land_slope_angle), land_flare_alt_relative, land_thrust_lim_alt_relative, land_H1_virt);
 
-   // mavlink_log_info(&_mavlink_log_pub,"0=%2.1f  1=%2.1f 1=%2.1f 1=%2.1f  ",(double)land_slope_angle,(double)land_slope_angle1,(double)land_slope_angle2,(double)land_slope_angle3);
+    // mavlink_log_info(&_mavlink_log_pub,"0=%2.1f  1=%2.1f 1=%2.1f 1=%2.1f  ",(double)land_slope_angle,(double)land_slope_angle1,(double)land_slope_angle2,(double)land_slope_angle3);
 
 
 
@@ -1304,7 +1304,7 @@ FixedwingPositionControl::control_follow_target(const Vector2f &nav_speed_2d,
                                                       {-2, 0}  // 4号机位置,主机后面
                                                };
 
-    float L_space(20.0f);  //编队飞机之间的间距
+    float L_space(10.0f);  //编队飞机之间的间距
 
     matrix::Vector2f L_MPtoSP = {L_space,L_space}; //从机相对主机的偏移距离向量,主机地轴航向作为x轴正方向,主机右侧是y正方向
     uint8_t sys_id = _vehicle_status.system_id;
@@ -1474,50 +1474,57 @@ FixedwingPositionControl::control_follow_target(const Vector2f &nav_speed_2d,
 
     //待办:这部分速度投影的处理还需要再优化,后期可以根据从机到编队的距离来判断,当距离非常大时不使用投影,距离很小时使用投影.或者根据从机到主机的方位来判断.
     //计算在主机速度上的投影
-    float dL_PtoPsp_project(math::constrain(PtoPsp_distance * MP_gndspd_ned_norm,-50.0f, 50.0f)); //注意将距离差向量投影到主机速度向量上 ,加限幅是为了防止SP_gndspd_ned溢出
-    float dV_MPtoSP_project(math::constrain(MPminusSP_speed * MP_gndspd_ned_norm,-30.0f, 30.0f)); //将速度差向量投影到主机速度向量上 ,加限幅是为了防止SP_gndspd_ned溢出
+    float dL_PtoPsp_project(math::constrain(PtoPsp_distance * MP_gndspd_ned_norm,-20.0f, 20.0f)); //注意将距离差向量投影到主机速度向量上 ,加限幅是为了防止SP_gndspd_ned溢出
+    float dV_MPtoSP_project(math::constrain(MPminusSP_speed * MP_gndspd_ned_norm,-20.0f, 20.0f)); //将速度差向量投影到主机速度向量上 ,加限幅是为了防止SP_gndspd_ned溢出
 
 
     //这里要注意差值向量的正负
 
-    float K_P(1.5f); //距离差量的增益值  待办,这个参数要做成地面站可调的,注意,参数为2时3号机也能飞,不建议再继续增大了,下次调试改成1.5试试
-    float K_D(1.2f); //速度差量的增益值  待办,这个参数要做成地面站可调的,注意,这个值先保持1.2,目前问题是当通信频率不高时这个值是否有效
-    Vector2f SP_gndspd_ned_sp = MP_gndspd_ned + MP_gndspd_ned.normalized() * (K_P * dL_PtoPsp_project + K_D * dV_MPtoSP_project); //从机目标地速向量于主机地速向量平行
+    float K_P(1.0f); //距离差量的增益值  待办,这个参数要做成地面站可调的,注意,参数为2时3号机也能飞,不建议再继续增大了,下次调试改成1.5试试
+    float K_D(1.0f); //速度差量的增益值  待办,这个参数要做成地面站可调的,注意,这个值先保持1.2,目前问题是当通信频率不高时这个值是否有效
+//    Vector2f SP_gndspd_ned_sp = MP_gndspd_ned + MP_gndspd_ned.normalized() * (K_P * dL_PtoPsp_project + K_D * dV_MPtoSP_project); //从机目标地速向量于主机地速向量平行
 
-    //根据地速与空速数据,计算环境风速.当空速有效时起效
-    static Vector2f wind_speed_ned{};
-    if(_airspeed_valid){
-        wind_speed_ned = SP_gndspd_ned - air_speed_2d;
-    } else {
-        wind_speed_ned = {0.0,0.0};  //当空速数据无效时,风速归零
-    }
-    //计算目标空速
-    Vector2f SP_airspd_ned_sp = SP_gndspd_ned_sp-wind_speed_ned; //目标风速矢量 = 目标地速 - 风速
-    float airspeed_follow_sp = math::max(SP_airspd_ned_sp.length(), _parameters.airspeed_min);
+    //新增新的速度控制方法,将速度差量直接加在测量的空速上.
 
-    //待办:主机设置的最小空速要大于从机的最小空速4m/s.暂时在地面站里面设置,之后要写在代码里面
+    float airspeed_follow_sp = air_speed_2d.length() + K_P * dL_PtoPsp_project + K_D * dV_MPtoSP_project;
+
+
+
+
+//    //根据地速与空速数据,计算环境风速.当空速有效时起效
+//    static Vector2f wind_speed_ned{};
+//    if(_airspeed_valid){
+//        wind_speed_ned = SP_gndspd_ned - air_speed_2d;
+//    } else {
+//        wind_speed_ned = {0.0,0.0};  //当空速数据无效时,风速归零
+//    }
+//    //计算目标空速
+//    Vector2f SP_airspd_ned_sp = SP_gndspd_ned_sp-wind_speed_ned; //目标风速矢量 = 目标地速 - 风速
+//    float airspeed_follow_sp = math::max(SP_airspd_ned_sp.length(), _parameters.airspeed_min);
+
+//    //待办:主机设置的最小空速要大于从机的最小空速4m/s.暂时在地面站里面设置,之后要写在代码里面
 
 
     float throttle_follow_refer = mission_throttle;
 
 
 
-    //注意:在这里设置TECS的油门参考值,通过参考值的设定更迅速调整飞机的速度
-    float Control_thr_L = 3.0f;//油门比例控制范围
-    float THR_outofrange = 0.95f;//超出比例控制范围后的油门
-    if(PtoPsp_distance.length() < 12.0f){
-        if(dL_PtoPsp_project < 0.0f){ //当飞机超前的时候务必减速
-            throttle_follow_refer = 0.01f;
-            airspeed_follow_sp = 0.01f;
-        } else if(dL_PtoPsp_project < Control_thr_L){
-            throttle_follow_refer = constrain(dL_PtoPsp_project * THR_outofrange / Control_thr_L, 0.01f, THR_outofrange);
-        }
-    }
+//    //注意:在这里设置TECS的油门参考值,通过参考值的设定更迅速调整飞机的速度
+//    float Control_thr_L = 3.0f;//油门比例控制范围
+//    float THR_outofrange = 0.95f;//超出比例控制范围后的油门
+//    if(PtoPsp_distance.length() < 12.0f){
+//        if(dL_PtoPsp_project < 0.0f){ //当飞机超前的时候务必减速
+//            throttle_follow_refer = 0.01f;
+//            airspeed_follow_sp = 0.01f;
+//        } else if(dL_PtoPsp_project < Control_thr_L){
+//            throttle_follow_refer = constrain(dL_PtoPsp_project * THR_outofrange / Control_thr_L, 0.01f, THR_outofrange);
+//        }
+//    }
 
     //从机超前时稍微提高目标高度
     float chaosu_L = 0.0f;
     if((PtoPsp_distance.length() < 30.0f && dL_PtoPsp_project < -7.0f)){ //这里给了一个很宽的作用范围,防止飞机对头飞行时相撞
-        chaosu_L = 5.0f;
+        chaosu_L = 0.0f;
     }
 
 
@@ -1586,14 +1593,14 @@ Vector2f prevA_sp = {float(PA_position_sp.lat), float(PA_position_sp.lon)};
 
     //此功能是飞机在目标范围内时,加入编队高度层,注意,编队无高度差
     //这一段是使用水平距离判断是否需要进行降高度保护
-    float juli_L = 4.0f * float(sys_id-1);  //根据各机编号确定安全间隔
+    float juli_L = 5.0f * float(sys_id-1);  //根据各机编号确定安全间隔
     if((dL_PtoPsp_project < 8.0f && dL_PtoPsp_project > -4.0f) && (fabs(double(dL_PtoPsp_across)) < 8.0)){
         juli_L = 1.0f * float(sys_id-1);//加入编队,也有一定的安全间隔
     }
 
     //    待办:这里可以加一个对高度的处理,当飞行器很接近目标位置时提高高度进入编队
     //  home_alt_valid() ? _home_pos.alt + 40.0f : MP_position_filter.alt -10.0f,  //调试,注意这里是用了home高度 待办:注意所有飞机起飞前应在同一高度解锁
-    float follow_alt_sp = max(MP_position_filter.alt - juli_L + chaosu_L, pos_sp_curr.home_alt + 70.0f);//_home_pos.alt + 100.0f;
+    float follow_alt_sp = max(MP_position_filter.alt - juli_L + chaosu_L, pos_sp_curr.home_alt + 42.0f);//_home_pos.alt + 100.0f;
 
     if(INFO_enable_1s) mavlink_log_info(&_mavlink_log_pub,"纵%.0f 横%.0f 速差%.0f",double(dL_PtoPsp_project),double(PtoPsp_distance % MP_gndspd_ned_norm),double(dV_MPtoSP_project));
 
