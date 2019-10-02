@@ -184,8 +184,9 @@ private:
 
     uint8_t sys_id{0};
     uint8_t comp_id{0};
-    bool status_valid{false};
     uint8_t nav_status{0};
+    bool status_valid{false};
+    bool pub{true};
 
     manual_control_setpoint_s   _manual_sp{};
 

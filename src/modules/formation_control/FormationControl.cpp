@@ -274,13 +274,13 @@ FormationControl::enable_follow_target_mode(bool follow_target_enabled)
 {
     if (follow_target_enabled) {
 
-        status_poll();  //获取飞机状态
+        //status_poll();  //获取飞机状态
 
 
         //        printf("启用followme模式 %d \n",follow_target_enabled);
         //
 
-        if(nav_status != vehicle_status_s::NAVIGATION_STATE_AUTO_FOLLOW_TARGET){
+        //if(nav_status != vehicle_status_s::NAVIGATION_STATE_AUTO_FOLLOW_TARGET){
 
             _command.command            = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;//设置模式命令id
             _command.param1             = 1.0f;
@@ -291,10 +291,11 @@ FormationControl::enable_follow_target_mode(bool follow_target_enabled)
 
             if (_vehicle_command_pub != nullptr) {
                 orb_publish(ORB_ID(vehicle_command), _vehicle_command_pub, &_command);//发布这个命令
+                pub=false;
             } else {
                 _vehicle_command_pub = orb_advertise(ORB_ID(vehicle_command), &_command);
             }
-        }
+       // }
 
     }
 }
@@ -406,7 +407,16 @@ void FormationControl::run()
         //ID 1 是主机,执行位置/导航姿态/速度/速度设置点发送等
         //ID 其他值是从机,从机接收主机的数据,根据编队队形计算相应的控制指令,然后进入offboard模式执行
 
-        if((sys_id != mainplaneID)){
+        if((sys_id != mainplaneID)){//如果是从机
+             status_poll();  //获取飞行模式和飞机ID
+             if(nav_status == vehicle_status_s::NAVIGATION_STATE_AUTO_FOLLOW_TARGET) //切到了follow_target模式
+             {  
+                 enable_follow_target_mode(pub);//切换从机进入follow主机模式
+             }
+             else{
+                 pub=true;
+             }
+            
             enable_follow_target_mode(check_aux1_enable_follow()); //这一段预留:使从机进入follow_target模式  //试验时,程序和遥控器共同实现
 
         }
