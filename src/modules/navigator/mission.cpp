@@ -1024,7 +1024,10 @@ Mission::set_mission_items()
 		set_current_offboard_mission_item();
 	}
 
-	if (_mission_item.autocontinue && get_time_inside(_mission_item) < FLT_EPSILON) {
+	float time=get_time_inside(_mission_item);
+	if((time>300)&&(time<400)) { time=0;}
+
+	if (_mission_item.autocontinue && time < FLT_EPSILON) {
 		/* try to process next mission item */
 		if (has_next_position_item) {
 			/* got next mission item, update setpoint triplet */
@@ -1215,8 +1218,10 @@ Mission::heading_sp_update()
 		}
 
 	} else {
+		float time=get_time_inside(_mission_item);
+		if((time>300)&&(time<400)) {time=0;}
 		/* set yaw angle for the waypoint if a loiter time has been specified */
-		if (_waypoint_position_reached && get_time_inside(_mission_item) > FLT_EPSILON) {
+		if (_waypoint_position_reached && time > FLT_EPSILON) {
 			// XXX: should actually be param4 from mission item
 			// at the moment it will just keep the heading it has
 			//_mission_item.yaw = _on_arrival_yaw;

@@ -366,9 +366,61 @@ MissionBlock::is_mission_item_reached()
 			_time_first_inside_orbit = now;
 		}
 
+
+		//主机达到航点后根据航线悬停时间的参数 进行队形的切换
+
+		formationx_s  form={};
+		form.timestamp = hrt_absolute_time();
+
+		float time=get_time_inside(_mission_item); //根据悬停时间 判断这个航点达到后切换的队形，时间采用300-400区间，310纵向一字 340横向一字  380菱形
+		
+		if((time>300)&&(time<320)){ //310 纵向一字
+			form.formshape_id=2;//纵向一字 定义可以在FormationControl.hpp中看到
+			time=0; //恢复默认时间
+
+			if (_formationx_pub != nullptr) {
+				orb_publish(ORB_ID(formationx), _formationx_pub, &form);
+
+			} else {
+				_formationx_pub = orb_advertise(ORB_ID(formationx), &form);
+			}
+		}
+		else if((time>330)&&(time<350)) //340 水平一字
+		{
+			form.formshape_id=1;//横向一字 定义可以在FormationControl.hpp中看到
+			time=0; //恢复默认时间
+
+			if (_formationx_pub != nullptr) {
+				orb_publish(ORB_ID(formationx), _formationx_pub, &form);
+
+			} else {
+				_formationx_pub = orb_advertise(ORB_ID(formationx), &form);
+			}
+		}
+		else if((time>370)&&(time<390))
+		{
+			form.formshape_id=3; //380 菱形
+			time=0; //恢复默认时间
+
+			if (_formationx_pub != nullptr) {
+				orb_publish(ORB_ID(formationx), _formationx_pub, &form);
+
+			} else {
+				_formationx_pub = orb_advertise(ORB_ID(formationx), &form);
+			}
+		}
+		else{
+
+		}
+
+
+
+
+
+
 		/* check if the MAV was long enough inside the waypoint orbit */
-		if ((get_time_inside(_mission_item) < FLT_EPSILON) ||
-		    (now - _time_first_inside_orbit >= (hrt_abstime)(get_time_inside(_mission_item) * 1e6f))) {
+		if ((time < FLT_EPSILON) ||
+		    (now - _time_first_inside_orbit >= (hrt_abstime)(time * 1e6f))) {
 
 			position_setpoint_s &curr_sp = _navigator->get_position_setpoint_triplet()->current;
 			const position_setpoint_s &next_sp = _navigator->get_position_setpoint_triplet()->next;
