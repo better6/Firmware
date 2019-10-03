@@ -257,13 +257,8 @@ FixedwingPositionControl::parameters_update()
     param_get(_parameter_handles.land_slope_angle, &land_slope_angle);
 
     param_get(_parameter_handles.form_kp, &_kp);
-    //warnx("---angle1=%2.1f",(double)land_slope_angle1);
-
     param_get(_parameter_handles.form_kd, &_kd);
-   // warnx("----angle2=%2.1f",(double)land_slope_angle2);
-
     param_get(_parameter_handles.form_temp, &_temp);
-   // warnx("---angle3=%2.1f",(double)land_slope_angle3);
 
     float land_flare_alt_relative = 0.0f;
     param_get(_parameter_handles.land_flare_alt_relative, &land_flare_alt_relative);
@@ -1169,8 +1164,8 @@ matrix::Vector2f FixedwingPositionControl::bodytoNED(matrix::Vector2f L_body,mat
     float sin_MP_yaw = speed_ned(1) / speed_ned.length();
     if(speed_ned.length()<3.0f){   //当地速很小时,地速方向不稳定,此时使用飞机机头指向
         //待办:这部分需要在飞行时确认飞机的地速方向与机头指向偏差不大,务必注意根据试验情况确定
-        cos_MP_yaw = cos(double(yaw));
-        sin_MP_yaw = sin(double(yaw));
+        cos_MP_yaw = cos(double(-1.0f * yaw));//负值是让飞机跟踪主机机尾
+        sin_MP_yaw = sin(double(-1.0f * yaw));
     }
 
     // 坐标转换,从飞机体轴系转换到地轴系ned
@@ -1179,6 +1174,54 @@ matrix::Vector2f FixedwingPositionControl::bodytoNED(matrix::Vector2f L_body,mat
     L_ned(1) = L_body(1) * cos_MP_yaw + L_body(0) * sin_MP_yaw;
     return L_ned;
 
+}
+
+
+void FixedwingPositionControl::cal_mean_spd(const follow_target_s &Position_sp,follow_target_s &Position_sp_prev,Vector2f &P_gndspd_ned)
+{
+    float dt_ms = (Position_sp.timestamp - Position_sp_prev.timestamp) *1e-3f;
+    if (dt_ms >= 2000.0f) {
+        Position_sp_prev = Position_sp;  //当第一次计算时,复位Position_sp_prev
+    }else if (dt_ms >= 100.0f) {
+        // get last gps known reference for target
+        static matrix::Vector3f P_position_delta3D{};
+        get_vector_to_next_waypoint( Position_sp_prev.lat,Position_sp_prev.lon,Position_sp.lat,Position_sp.lon,
+                                     &P_position_delta3D(0),&P_position_delta3D(1));
+        P_position_delta3D(2) = Position_sp.alt - Position_sp_prev.alt;
+        // update the average velocity of the target based on the position
+        matrix::Vector3f P_velocity_average3D = P_position_delta3D / (dt_ms * 1e-3f);
+        Position_sp_prev = Position_sp;  //每一段计算时间之后,重新复位Position_sp_prev
+        P_gndspd_ned = {P_velocity_average3D(0),P_velocity_average3D(1)};    //收到的主机的速度.单位 m/s
+    }
+}
+
+void FixedwingPositionControl::cal_relative_lapse_position(
+        const follow_target_s &MP_position_filter,
+        const Vector2f &L_MPtoP_ned,
+        follow_target_s &P_relative_prev,
+        const float &dt_utc_s,
+        follow_target_s &P_relative_dL,
+        Vector2f &P_relative_speed)
+{
+    //初始化主机位置
+    map_projection_reference_s target_ref;
+    map_projection_init(&target_ref,  MP_position_filter.lat, MP_position_filter.lon);
+
+    //计算相对点的GPS坐标
+    static follow_target_s P_relative;
+    map_projection_reproject(&target_ref, L_MPtoP_ned(0), L_MPtoP_ned(1),
+                             &P_relative.lat, &P_relative.lon);
+
+    //预测APB点的位置,首先要计算各点各自的速度
+    //这一段用来求平均速度
+    cal_mean_spd(P_relative,P_relative_prev,P_relative_speed);
+
+    //计算APB点在延时内的时移
+    Vector2f P_lapse_L = dt_utc_s * P_relative_speed;  //主机在传输时间差内的位移 单位m
+    //初始化P点位置
+    map_projection_init(&target_ref,  P_relative.lat, P_relative.lon);
+    //计算P点时移位置
+    map_projection_reproject(&target_ref, P_lapse_L(0), P_lapse_L(1),&P_relative_dL.lat, &P_relative_dL.lon);
 }
 
 
@@ -1263,24 +1306,11 @@ FixedwingPositionControl::control_follow_target(const Vector2f &nav_speed_2d,
     MP_position_filter.yaw = MP_position_filter.yaw *         _responsiveness + MP_position.yaw *         (1 - _responsiveness); //附加一个对高度的滤波
 
     //这一段用来求平均速度
-    static follow_target_s MP_position_prev{};
-    float dt_ms = (MP_position_filter.timestamp - MP_position_prev.timestamp) *1e-3f;
-    if (dt_ms >= 100.0f) {
-        // get last gps known reference for target
-        static matrix::Vector3f MP_position_delta3D{};
-        get_vector_to_next_waypoint( MP_position_prev.lat,MP_position_prev.lon,MP_position_filter.lat,MP_position_filter.lon,
-                                     &MP_position_delta3D(0),&MP_position_delta3D(1));
-        MP_position_delta3D(2) = MP_position_filter.alt - MP_position_prev.alt;
-        // update the average velocity of the target based on the position
-        matrix::Vector3f MP_velocity_average3D = MP_position_delta3D / (dt_ms * 1e-3f);
-        MP_position_filter.vx = MP_velocity_average3D(0);
-        MP_position_filter.vy = MP_velocity_average3D(1);
-        MP_position_filter.vz = MP_velocity_average3D(2);
-        MP_position_prev = MP_position_filter;  //每一段计算时间之后,重新复位MP_position_prev
-    }
+    Vector2f MP_gndspd_ned;
+    static follow_target_s MP_position_filter_prev{};
+    cal_mean_spd(MP_position_filter,MP_position_filter_prev,MP_gndspd_ned);
+    Vector2f MP_speed = MP_gndspd_ned;
 
-    Vector2f MP_speed = {MP_position_filter.vx,MP_position_filter.vy};    //收到的主机的速度.单位 m/s
-    Vector2f MP_gndspd_ned = {MP_position_filter.vx,MP_position_filter.vy};    //收到的主机的速度.单位 m/s
 
 
     static uint8_t _form_shape_current =  MP_position.FORMSHAPE_RHOMBUS4;
@@ -1354,7 +1384,7 @@ FixedwingPositionControl::control_follow_target(const Vector2f &nav_speed_2d,
     //把两架飞机之间的水平距离转换为地理坐标系下的差距，下一步好根据这个差距计算从机的位置指令
     matrix::Vector2f L_MPtoSP_ned = bodytoNED(L_MPtoSP,MP_gndspd_ned,MP_position_filter.yaw);
 
-    float L_spacePB{30.0f};//2.0f * _navigator->get_acceptance_radius());  // B点到从机目标位置的距离,默认大于L1距离
+    float L_spacePB{80.0f};//2.0f * _navigator->get_acceptance_radius());  // B点到从机目标位置的距离,默认大于L1距离
     float L_spacePA{0.0f};  //A点到从机目标位置的距离,这个距离不宜太大
     matrix::Vector2f offset_PB_ned = bodytoNED({L_spacePB         , 0.0f},MP_gndspd_ned,MP_position_filter.yaw);  //PB方向为正
     matrix::Vector2f offset_PA_ned = bodytoNED({-1.0f * L_spacePA , 0.0f},MP_gndspd_ned,MP_position_filter.yaw);  //PA方向为负
@@ -1398,11 +1428,8 @@ FixedwingPositionControl::control_follow_target(const Vector2f &nav_speed_2d,
 
 
     hrt_abstime now_utc_time1 = SP_gps_pos.time_utc_usec + hrt_elapsed_time(&SP_gps_pos.timestamp);
-    //根据从机相对主机的距离,计算出从机的目标位置
-    map_projection_reference_s target_ref;
-    static follow_target_s SP_position_sp;
-    static follow_target_s PB_position_sp;
-    static follow_target_s PA_position_sp;
+
+/***********************下面是新方法计算从机目标点\A\B点的速度***********************/
 
     //下面这段代码主要是NED坐标系和全球坐标系之间的转换，map_projection_init函数的意思就是当前这个经度纬度视为（0,0）原点。
     //map_projection_reproject函数在原点基础上 偏移一个（x,y）后的经度纬度是多少，这样就可以根据两个点之间地理坐标系的差距 计算出另外一个点的全球坐标系
@@ -1411,34 +1438,42 @@ FixedwingPositionControl::control_follow_target(const Vector2f &nav_speed_2d,
     //编队目的，下面已知主机和从机的地理坐标系上编队的差距，知道主机的位置 如何求从机的位置经度纬度？
     //那就把主机位置映射成原点，加上地理坐标系上的偏移后，求出从机的经度纬度。函数重要重要是地理坐标系和全球坐标系之间的转换，主要注意的是初始化谁是原点（0,0）
 
-    //初始化主机位置
-    map_projection_init(&target_ref,  MP_position_filter.lat, MP_position_filter.lon);
-    //计算主机时移位置
-    static follow_target_s MP_position_filter_dL{};
-    map_projection_reproject(&target_ref, MP_deltaL(0), MP_deltaL(1),&MP_position_filter_dL.lat, &MP_position_filter_dL.lon);
-    //初始化主机时移位置
-    map_projection_init(&target_ref,  MP_position_filter_dL.lat, MP_position_filter_dL.lon);
-    //计算从机时移位置
-    map_projection_reproject(&target_ref, L_MPtoSP_ned(0), L_MPtoSP_ned(1),
-                             &SP_position_sp.lat, &SP_position_sp.lon);
-    //计算A点时移位置
-    map_projection_reproject(&target_ref, L_MPtoSP_ned(0)+offset_PB_ned(0), L_MPtoSP_ned(1)+offset_PB_ned(1),
-                             &PB_position_sp.lat, &PB_position_sp.lon); //计算A点坐标,A点位置为主机地速方向前方一定距离
-    //计算B点时移位置
-    map_projection_reproject(&target_ref, L_MPtoSP_ned(0)+offset_PA_ned(0), L_MPtoSP_ned(1)+offset_PA_ned(1),
-                             &PA_position_sp.lat, &PA_position_sp.lon); //计算B点坐标,B点位置为从机地速方向后方一定距离
 
+    //计算P点
+    static follow_target_s new_SP_position_sp_prev; //这个参数用来保存下面函数中的前一个位置;
+    static follow_target_s SP_position_sp{};
+    Vector2f SP_speed_sp;
+    cal_relative_lapse_position(
+                MP_position_filter,
+                L_MPtoSP_ned,
+                new_SP_position_sp_prev,
+                dt_utc_s,
+                SP_position_sp,
+                SP_speed_sp);
+    //计算A点
+    static follow_target_s new_PA_position_sp_prev; //这个参数用来保存下面函数中的前一个位置;
+    static follow_target_s PA_position_sp{};
+    Vector2f PA_speed_sp;
+    cal_relative_lapse_position(
+                MP_position_filter,
+                L_MPtoSP_ned + offset_PA_ned,
+                new_PA_position_sp_prev,
+                dt_utc_s,
+                PA_position_sp,
+                PA_speed_sp);
+    //计算B点
+    static follow_target_s new_PB_position_sp_prev; //这个参数用来保存下面函数中的前一个位置;
+    static follow_target_s PB_position_sp{};
+    Vector2f PB_speed_sp;
+    cal_relative_lapse_position(
+                MP_position_filter,
+                L_MPtoSP_ned + offset_PB_ned,
+                new_PB_position_sp_prev,
+                dt_utc_s,
+                PB_position_sp,
+                PB_speed_sp);
 
-
-
-
-
-
-
-
-
-
-
+/***********************上面是新方法计算从机目标点\A\B点的速度***********************/
 
     hrt_abstime now_utc_time2 = SP_gps_pos.time_utc_usec + hrt_elapsed_time(&SP_gps_pos.timestamp);
 
@@ -1452,86 +1487,54 @@ FixedwingPositionControl::control_follow_target(const Vector2f &nav_speed_2d,
     get_vector_to_next_waypoint(SP_global_pos.lat,SP_global_pos.lon,SP_position_sp.lat,SP_position_sp.lon,
                                 &PtoPsp_distance(0),&PtoPsp_distance(1));
     //计算速度差
+    Vector2f SP_speed = {SP_global_pos.vel_n,SP_global_pos.vel_e};
+    Vector2f SP_speed__delta = SP_speed_sp - SP_speed;  //从机目标地速减去从机实际地速
 
-    Vector2f SP_gndspd_ned = {SP_global_pos.vel_n,SP_global_pos.vel_e};
-    Vector2f MPminusSP_speed = MP_gndspd_ned - SP_gndspd_ned;  //主机地速减去从机地速
+    //从机实际航向 与 从机目标航向的角度差
+    float bear_P2Psp_P1v = math::degrees(atan2f(PtoPsp_distance % SP_speed_sp,PtoPsp_distance * SP_speed_sp));
 
-    //
-    float bear_P2Psp_P1v = math::degrees(atan2f(PtoPsp_distance % MP_gndspd_ned,PtoPsp_distance * MP_gndspd_ned));
+    //计算从机的航线方向角,就是从A点指向B点的方向
+//    //先获得主机的实际航向角
+//    Vector2f yaw_norm = {float(cos(double(MP_position_filter.yaw))),float(sin(double(MP_position_filter.yaw)))};
 
 
+    static Vector2f AtoB_vector{};
+    get_vector_to_next_waypoint(PA_position_sp.lat,PA_position_sp.lon,PB_position_sp.lat,PB_position_sp.lon,
+                                &AtoB_vector(0),&AtoB_vector(1));
 
-    Vector2f yaw_norm = {float(cos(double(MP_position_filter.yaw))),float(sin(double(MP_position_filter.yaw)))};
-
-    Vector2f MP_gndspd_ned_norm = MP_gndspd_ned.length()>2.0f ? MP_gndspd_ned.normalized() : yaw_norm;    //调试,这个阈值是地速大小,注意切换时数据有无跳变
 
     //待办:在飞行或高速运动的时候务必确认以下以上两个向量的角度,先飞主机看看
     //待办:在地面上调好飞机的距离响应和反馈,务必确认好速度的反馈
 
     //待办:这部分速度投影的处理还需要再优化,后期可以根据从机到编队的距离来判断,当距离非常大时不使用投影,距离很小时使用投影.或者根据从机到主机的方位来判断.
-    //计算在主机速度上的投影
-    float dL_PtoPsp_project(math::constrain(PtoPsp_distance * MP_gndspd_ned_norm,-20.0f, 20.0f)); //注意将距离差向量投影到主机速度向量上 ,加限幅是为了防止SP_gndspd_ned溢出
-    float dV_MPtoSP_project(math::constrain(MPminusSP_speed * MP_gndspd_ned_norm,-20.0f, 20.0f)); //将速度差向量投影到主机速度向量上 ,加限幅是为了防止SP_gndspd_ned溢出
+    //计算在从机目标速度上的投影
+    float dL_project(math::constrain(PtoPsp_distance * AtoB_vector.normalized(),-20.0f, 20.0f)); //注意将距离差向量投影到主机速度向量上 ,加限幅是为了防止SP_speed溢出
+    float dV_project(math::constrain(SP_speed__delta * AtoB_vector.normalized(),-20.0f, 20.0f)); //将速度差向量投影到主机速度向量上 ,加限幅是为了防止SP_speed溢出
 
 
-    //这里要注意差值向量的正负
+     //新增新的速度控制方法,将速度差量直接加在测量的空速上.
 
-    // float K_P(1.0f); //距离差量的增益值  待办,这个参数要做成地面站可调的,注意,参数为2时3号机也能飞,不建议再继续增大了,下次调试改成1.5试试
-    // float K_D(1.0f); //速度差量的增益值  待办,这个参数要做成地面站可调的,注意,这个值先保持1.2,目前问题是当通信频率不高时这个值是否有效
-//    Vector2f SP_gndspd_ned_sp = MP_gndspd_ned + MP_gndspd_ned.normalized() * (K_P * dL_PtoPsp_project + K_D * dV_MPtoSP_project); //从机目标地速向量于主机地速向量平行
+    float airspeed_follow_sp = air_speed_2d.length() + _kp * dL_project + _kd * dV_project;
 
-    //新增新的速度控制方法,将速度差量直接加在测量的空速上.
-
-    float airspeed_follow_sp = air_speed_2d.length() + _kp * dL_PtoPsp_project + _kd * dV_MPtoSP_project;
-
-
-
-
-//    //根据地速与空速数据,计算环境风速.当空速有效时起效
-//    static Vector2f wind_speed_ned{};
-//    if(_airspeed_valid){
-//        wind_speed_ned = SP_gndspd_ned - air_speed_2d;
-//    } else {
-//        wind_speed_ned = {0.0,0.0};  //当空速数据无效时,风速归零
-//    }
-//    //计算目标空速
-//    Vector2f SP_airspd_ned_sp = SP_gndspd_ned_sp-wind_speed_ned; //目标风速矢量 = 目标地速 - 风速
-//    float airspeed_follow_sp = math::max(SP_airspd_ned_sp.length(), _parameters.airspeed_min);
-
-//    //待办:主机设置的最小空速要大于从机的最小空速4m/s.暂时在地面站里面设置,之后要写在代码里面
+    _att_sp.air_follow_sp = airspeed_follow_sp;
+    _att_sp.air_speed_2d  = air_speed_2d.length();
+    _att_sp.air_dL_project    = dL_project;
+    _att_sp.air_dV_project    = dV_project;
 
 
     float throttle_follow_refer = mission_throttle;
 
-
-
-//    //注意:在这里设置TECS的油门参考值,通过参考值的设定更迅速调整飞机的速度
-//    float Control_thr_L = 3.0f;//油门比例控制范围
-//    float THR_outofrange = 0.95f;//超出比例控制范围后的油门
-//    if(PtoPsp_distance.length() < 12.0f){
-//        if(dL_PtoPsp_project < 0.0f){ //当飞机超前的时候务必减速
-//            throttle_follow_refer = 0.01f;
-//            airspeed_follow_sp = 0.01f;
-//        } else if(dL_PtoPsp_project < Control_thr_L){
-//            throttle_follow_refer = constrain(dL_PtoPsp_project * THR_outofrange / Control_thr_L, 0.01f, THR_outofrange);
-//        }
-//    }
-
     //从机超前时稍微提高目标高度
     float chaosu_L = 0.0f;
-    if((PtoPsp_distance.length() < 30.0f && dL_PtoPsp_project < -7.0f)){ //这里给了一个很宽的作用范围,防止飞机对头飞行时相撞
+    if((PtoPsp_distance.length() < 30.0f && dL_project < -7.0f)){ //这里给了一个很宽的作用范围,防止飞机对头飞行时相撞
         chaosu_L = 0.0f;
     }
 
 
 
 
-
-    float dL_PtoPsp_across = PtoPsp_distance % MP_gndspd_ned_norm;
-
-
-
     /******************************************* 这部分进行横向控制和修正 **************************************************************************/
+    float dL_PtoPsp_across = PtoPsp_distance % AtoB_vector.normalized();
     //开始横航向计算
 //提取A点和B点坐标
 Vector2f currB_sp = {float(PB_position_sp.lat), float(PB_position_sp.lon)};
@@ -1541,64 +1544,34 @@ Vector2f prevA_sp = {float(PA_position_sp.lat), float(PA_position_sp.lon)};
     _att_sp.roll_body = _l1_control.nav_roll();
     _att_sp.yaw_body = _l1_control.nav_bearing();
 
-    //如果飞机的侧偏距在一定范围内(需要同时满足以下条件),就启用2倍纠偏权限
-    if(dL_PtoPsp_project < 10.0f && dL_PtoPsp_project > -4.0f && fabs(double(dL_PtoPsp_across)) < 10.0){ //条件1
 
-        //以下两种模式,等测试
-        static int8_t last_check_aux2_SW_enable = 0;
-        int8_t now_check_aux2_SW_enable = check_aux2_SW_enable();
 
-        //待办,给飞机增加高度处理程序,现在飞机在天上高度严重不一致.
-        //待办,给飞机增加获得定位时报高度的程序,方便外场操作
-        //待办,当某个飞机超出控制精度,需要降高度避险时,需要地面站发出声音
+    //待办,给飞机增加高度处理程序,现在飞机在天上高度严重不一致.
+    //待办,给飞机增加获得定位时报高度的程序,方便外场操作
+    //待办,当某个飞机超出控制精度,需要降高度避险时,需要地面站发出声音
 
-        if(true){
-            if(last_check_aux2_SW_enable != now_check_aux2_SW_enable){
-                mavlink_log_info(&_mavlink_log_pub,"#第一状态") //注意:这个控制模式追踪的最好
-            }
 
-            const float rectify_L_range = 1.0f;  //超过这个距离值,就会启用强制纠偏算法
-            if(float(fabs(double(dL_PtoPsp_across))) > rectify_L_range){ //条件2 //注意:这个值是1的时候是上次正常状态
-                _att_sp.roll_body = float(fabs(double(dL_PtoPsp_across * 1.0f/rectify_L_range))) * _att_sp.roll_body; //注意:这个值是5的时候是上次正常状态
-                //上次调试,飞机侧偏控制容易超调,想办法减缓,试试对侧偏距开根号
-            }
-        } else {
-            if(last_check_aux2_SW_enable != now_check_aux2_SW_enable){
-                mavlink_log_info(&_mavlink_log_pub,"#第二状态")
-            }
-            if(0){  //待办,注意这里的测试
-                _att_sp.roll_body = _att_sp.roll_body * float(fabs(double(_att_sp.roll_body)));
-            }else{
-                _att_sp.roll_body = math::radians(0.5f * math::degrees(_att_sp.roll_body) * float(fabs(double(math::degrees(_att_sp.roll_body)))));
+    //如果飞机的侧偏距在一定范围内(需要同时满足以下条件),就启用强制纠偏
+    if(dL_project < 15.0f && dL_project > -6.0f && fabs(double(dL_PtoPsp_across)) < 10.0){ //条件1
+        const float rectify_L_range = 1.0f;  //超过这个距离值,就会启用强制纠偏算法
+        if(float(fabs(double(dL_PtoPsp_across))) > rectify_L_range){ //条件2 //注意:这个值是1的时候是上次正常状态
+            _att_sp.roll_body = float(fabs(double(dL_PtoPsp_across * 1.0f/rectify_L_range))) * _att_sp.roll_body; //注意:这个值是5的时候是上次正常状态
 
-//                float rectify_ROLL_range = 5.0f;  //超过范围值,就会启用强制纠偏算法
-//                if(_att_sp.roll_body>0.0f){
-//                    _att_sp.roll_body = float(fmax(double(_att_sp.roll_body),double(1.0f/rectify_ROLL_range * _att_sp.roll_body * float(fabs(double(_att_sp.roll_body))))));
-//                }else{
-//                    _att_sp.roll_body = float(fmin(double(_att_sp.roll_body),double(1.0f/rectify_ROLL_range * _att_sp.roll_body * float(fabs(double(_att_sp.roll_body))))));
-//                }
-            }
         }
-        last_check_aux2_SW_enable = now_check_aux2_SW_enable;
-
         _att_sp.roll_body = constrain(_att_sp.roll_body, radians(-50.0f), radians(50.0f));  //限制范围
-
-
     }
 
 
     //此功能是飞机在目标范围内时,加入编队高度层,注意,编队无高度差
     //这一段是使用水平距离判断是否需要进行降高度保护
     float juli_L = 5.0f * float(sys_id-1);  //根据各机编号确定安全间隔
-    if((dL_PtoPsp_project < 8.0f && dL_PtoPsp_project > -4.0f) && (fabs(double(dL_PtoPsp_across)) < 8.0)){
-        juli_L = 1.0f * float(sys_id-1);//加入编队,也有一定的安全间隔
+    if((dL_project < 8.0f && dL_project > -4.0f) && (fabs(double(dL_PtoPsp_across)) < 8.0)){
+        juli_L = 2.0f * float(sys_id-1);//加入编队,也有一定的安全间隔
     }
 
-    //    待办:这里可以加一个对高度的处理,当飞行器很接近目标位置时提高高度进入编队
-    //  home_alt_valid() ? _home_pos.alt + 40.0f : MP_position_filter.alt -10.0f,  //调试,注意这里是用了home高度 待办:注意所有飞机起飞前应在同一高度解锁
     float follow_alt_sp = max(MP_position_filter.alt - juli_L + chaosu_L, pos_sp_curr.home_alt + 70.0f);//_home_pos.alt + 100.0f;
 
-    if(INFO_enable_1s) mavlink_log_info(&_mavlink_log_pub,"纵%.0f 横%.0f 速差%.0f",double(dL_PtoPsp_project),double(PtoPsp_distance % MP_gndspd_ned_norm),double(dV_MPtoSP_project));
+    if(INFO_enable_1s) mavlink_log_info(&_mavlink_log_pub,"纵%.0f 横%.0f 速差%.0f",double(dL_project),double(PtoPsp_distance % AtoB_vector.normalized()),double(dV_project));
 
     //待办,注意这里使用的home的高度可能不对
     //待办,注意限制主机在编队时的转弯半径,目前是通过限制主机滚转角小于20度的方式限制,此时2号机能跟随,但是其他从机不确定能否正常跟随.20190622
@@ -1634,7 +1607,6 @@ Vector2f prevA_sp = {float(PA_position_sp.lat), float(PA_position_sp.lon)};
 
         if(INFO_enable_1s) PX4_INFO("MP_position          .alt:\t%4.2f lat:\t%8.5f lon:\t%8.5f vx:\t%4.2f vy:\t%4.2f ",double(MP_position.alt),MP_position.lat,MP_position.lon,double(MP_position.vx),double(MP_position.vy));
         if(INFO_enable_1s) PX4_INFO("MP_position_filter   .alt:\t%4.2f lat:\t%8.5f lon:\t%8.5f vx:\t%4.2f vy:\t%4.2f ",double(MP_position_filter.alt),MP_position_filter.lat,MP_position_filter.lon,double(MP_position_filter.vx),double(MP_position_filter.vy));
-        if(INFO_enable_1s) PX4_INFO("MP_position_filter_dL.alt:\t%4.2f lat:\t%8.5f lon:\t%8.5f vx:\t%4.2f vy:\t%4.2f ",double(MP_position_filter_dL.alt),MP_position_filter_dL.lat,MP_position_filter_dL.lon,double(MP_position_filter_dL.vx),double(MP_position_filter_dL.vy));
         if(INFO_enable_1s) PX4_INFO("SP_position_sp       .alt:\t%4.2f lat:\t%8.5f lon:\t%8.5f vx:\t%4.2f vy:\t%4.2f ",double(SP_position_sp.alt),SP_position_sp.lat,SP_position_sp.lon,double(SP_position_sp.vx),double(SP_position_sp.vy));
         if(INFO_enable_1s) PX4_INFO("SP_global_pos        .alt:\t%4.2f lat:\t%8.5f lon:\t%8.5f vx:\t%4.2f vy:\t%4.2f ",double(SP_global_pos.alt),SP_global_pos.lat,SP_global_pos.lon,double(SP_global_pos.vel_n),double(SP_global_pos.vel_e));
         if(INFO_enable_1s) PX4_INFO("PB_position_sp       .alt:\t%4.2f lat:\t%8.5f lon:\t%8.5f vx:\t%4.2f vy:\t%4.2f ",double(PB_position_sp.alt),PB_position_sp.lat,PB_position_sp.lon,double(PB_position_sp.vx),double(PB_position_sp.vy));
@@ -1658,7 +1630,7 @@ Vector2f prevA_sp = {float(PA_position_sp.lat), float(PA_position_sp.lon)};
 
 
 
-        if(INFO_enable_1s) PX4_INFO("设置空速m/s:%.1f 距离差m:%.1f 速度差m/s:%.1f",double(airspeed_follow_sp),double(dL_PtoPsp_project),double(dV_MPtoSP_project));
+        if(INFO_enable_1s) PX4_INFO("设置空速m/s:%.1f 距离差m:%.1f 速度差m/s:%.1f",double(airspeed_follow_sp),double(dL_project),double(dV_project));
 
 
 
