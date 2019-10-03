@@ -1596,7 +1596,7 @@ Vector2f prevA_sp = {float(PA_position_sp.lat), float(PA_position_sp.lon)};
 
     //    待办:这里可以加一个对高度的处理,当飞行器很接近目标位置时提高高度进入编队
     //  home_alt_valid() ? _home_pos.alt + 40.0f : MP_position_filter.alt -10.0f,  //调试,注意这里是用了home高度 待办:注意所有飞机起飞前应在同一高度解锁
-    float follow_alt_sp = max(MP_position_filter.alt - juli_L + chaosu_L, pos_sp_curr.home_alt + 42.0f);//_home_pos.alt + 100.0f;
+    float follow_alt_sp = max(MP_position_filter.alt - juli_L + chaosu_L, pos_sp_curr.home_alt + 70.0f);//_home_pos.alt + 100.0f;
 
     if(INFO_enable_1s) mavlink_log_info(&_mavlink_log_pub,"纵%.0f 横%.0f 速差%.0f",double(dL_PtoPsp_project),double(PtoPsp_distance % MP_gndspd_ned_norm),double(dV_MPtoSP_project));
 
