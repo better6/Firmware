@@ -67,7 +67,7 @@ PARAM_DEFINE_FLOAT(NAV_LOITER_RAD, 50.0f);
  * @increment 0.5
  * @group Mission
  */
-PARAM_DEFINE_FLOAT(NAV_ACC_RAD, 10.0f); //misison模式下飞机“到点”可以接受的半径
+PARAM_DEFINE_FLOAT(NAV_ACC_RAD, 12.0f); //misison模式下飞机“到点”可以接受的半径
 
 /**
  * FW Altitude Acceptance Radius
@@ -116,7 +116,7 @@ PARAM_DEFINE_FLOAT(NAV_MC_ALT_RAD, 0.8f);
  *
  * @group Mission
  */
-PARAM_DEFINE_INT32(NAV_DLL_ACT, 0);
+PARAM_DEFINE_INT32(NAV_DLL_ACT, 0);//数据链路失效时的保护
 
 /**
  * Set RC loss failsafe mode
@@ -137,7 +137,7 @@ PARAM_DEFINE_INT32(NAV_DLL_ACT, 0);
  *
  * @group Mission
  */
-PARAM_DEFINE_INT32(NAV_RCL_ACT, 2);
+PARAM_DEFINE_INT32(NAV_RCL_ACT, 2);//RC失效保护
 
 /**
  * Set traffic avoidance mode

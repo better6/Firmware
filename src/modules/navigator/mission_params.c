@@ -1,3 +1,5 @@
+
+
 /****************************************************************************
  *
  *   Copyright (c) 2014-2016 PX4 Development Team. All rights reserved.
@@ -55,7 +57,7 @@
  * @increment 0.5
  * @group Mission
  */
-PARAM_DEFINE_FLOAT(MIS_TAKEOFF_ALT, 2.5f);
+PARAM_DEFINE_FLOAT(MIS_TAKEOFF_ALT, 2.5f); //takeoff起飞的高度
 
 /**
  * Minimum Loiter altitude
@@ -70,7 +72,7 @@ PARAM_DEFINE_FLOAT(MIS_TAKEOFF_ALT, 2.5f);
  * @increment 0.5
  * @group Mission
  */
-PARAM_DEFINE_FLOAT(MIS_LTRMIN_ALT, -1.0f);
+PARAM_DEFINE_FLOAT(MIS_LTRMIN_ALT, -1.0f); //最小的悬停高度，不使用
 
 /**
  * Maximal horizontal distance from home to first waypoint
@@ -86,7 +88,7 @@ PARAM_DEFINE_FLOAT(MIS_LTRMIN_ALT, -1.0f);
  * @increment 100
  * @group Mission
  */
-PARAM_DEFINE_FLOAT(MIS_DIST_1WP, 900);
+PARAM_DEFINE_FLOAT(MIS_DIST_1WP, 500);//航线保护 要求第一个航点距离home点的距离不能大于这个值，避免换了个测试场地 保留的还是之前的航线，那样misison会比较可怕
 
 /**
  * Maximal horizontal distance between waypoint
@@ -102,7 +104,7 @@ PARAM_DEFINE_FLOAT(MIS_DIST_1WP, 900);
  * @increment 100
  * @group Mission
  */
-PARAM_DEFINE_FLOAT(MIS_DIST_WPS, 900);
+PARAM_DEFINE_FLOAT(MIS_DIST_WPS, 500); //航线保护功能 两个航点之间的最大距离
 
 /**
  * Altitude setpoint mode
@@ -117,7 +119,7 @@ PARAM_DEFINE_FLOAT(MIS_DIST_WPS, 900);
  * @value 1 First Order Hold
  * @group Mission
  */
-PARAM_DEFINE_INT32(MIS_ALTMODE, 1);
+PARAM_DEFINE_INT32(MIS_ALTMODE, 1); //高度的一阶滤波
 
 /**
  * Multirotor only. Yaw setpoint mode.
@@ -132,7 +134,7 @@ PARAM_DEFINE_INT32(MIS_ALTMODE, 1);
  * @value 3 Heading away from home
  * @group Mission
  */
-PARAM_DEFINE_INT32(MIS_YAWMODE, 1);
+PARAM_DEFINE_INT32(MIS_YAWMODE, 3); //mission模式下 航向的保持方式，指向航点 还是指向home  还是背离home
 
 /**
 * Enable yaw control of the mount. (Only affects multicopters and ROI mission items)
@@ -163,7 +165,7 @@ PARAM_DEFINE_INT32(MIS_MNT_YAW_CTL, 0);
  * @increment 1
  * @group Mission
  */
-PARAM_DEFINE_FLOAT(MIS_YAW_TMT, -1.0f);
+PARAM_DEFINE_FLOAT(MIS_YAW_TMT, -1.0f); //设置航点时可以设置航速和航向，这是设置航向达到的最大超时时间
 
 /**
  * Max yaw error in degrees needed for waypoint heading acceptance.
@@ -175,4 +177,6 @@ PARAM_DEFINE_FLOAT(MIS_YAW_TMT, -1.0f);
  * @increment 1
  * @group Mission
  */
-PARAM_DEFINE_FLOAT(MIS_YAW_ERR, 12.0f);
+PARAM_DEFINE_FLOAT(MIS_YAW_ERR, 12.0f);//航向能够接受的最大航向误差
+
+
