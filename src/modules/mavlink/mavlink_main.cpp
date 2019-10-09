@@ -2019,36 +2019,43 @@ Mavlink::task_main(int argc, char *argv[])
         //这是ttyS1就是数传1的mavlink配置
 		//mavlink2.0网址
 		//https://mavlink.io/en/messages/common.html
+	
+		configure_stream("ALTITUDE", 2.0f);//高度数据 
+		configure_stream("ATTITUDE", 3.0f);//姿态数据 降频20->5
+		configure_stream("ATTITUDE_TARGET", 1.0f);
+		configure_stream("ESTIMATOR_STATUS", 0.5f);
+		configure_stream("EXTENDED_SYS_STATE", 1.0f);
+		configure_stream("GLOBAL_POSITION_INT", 5.0f);
+		configure_stream("GPS_RAW_INT", 2.0f);
+		configure_stream("HIGHRES_IMU", 2.0f);
+		configure_stream("HOME_POSITION", 0.5f);
+		configure_stream("LOCAL_POSITION_NED", 1.0f);		
+		configure_stream("PING", 0.1f);
+		configure_stream("POSITION_TARGET_LOCAL_NED", 1.0f);
+		configure_stream("POSITION_TARGET_GLOBAL_INT", 1.0f);
+		configure_stream("RC_CHANNELS", 2.0f);
+		configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);
+		configure_stream("SYS_STATUS", 1.0f);
+		configure_stream("DISTANCE_SENSOR", 0.5f);
 
-        configure_stream("ALTITUDE", 1.0f); //高度数据
-        configure_stream("ATTITUDE", 3.0f); //姿态数据
-        configure_stream("ESTIMATOR_STATUS", 1.0f);
-        configure_stream("EXTENDED_SYS_STATE", 1.0f); //一些系统状态
-        configure_stream("GLOBAL_POSITION_INT", 3.0f); //全球坐标
-        configure_stream("GPS_RAW_INT", 0.2f);  //gps数据
-        configure_stream("HIGHRES_IMU", 3.0f);  //IMU数据
-        configure_stream("HOME_POSITION", 0.1f); //HOME点数据
-        configure_stream("LOCAL_POSITION_NED", 2.0f); //NED数据
 
-        //configure_stream("POSITION_TARGET_LOCAL_NED", 0.2f); //期望的位置
-        //configure_stream("POSITION_TARGET_GLOBAL_INT", 0.2f); //期望的位置
-        //configure_stream("RC_CHANNELS", 1.0f);
-        //configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);
-        configure_stream("SYS_STATUS", 1.0f);
-        //configure_stream("VISION_POSITION_ESTIMATE", 1.0f);
+		//目前数据精简不需要的数据
+		//configure_stream("OPTICAL_FLOW_RAD", 1.0f);//光流
+		//configure_stream("VISION_POSITION_ESTIMATE", 1.0f);
 
-		//configure_stream("NAV_CONTROLLER_OUTPUT", 1.0f); //固定翼的
-        //configure_stream("OPTICAL_FLOW_RAD", 1.0f); //光流数据
-        //configure_stream("PING", 0.1f);
-	    //configure_stream("ATTITUDE_TARGET", 2.0f);  //期望的姿态目标
-        //configure_stream("CAMERA_IMAGE_CAPTURED");  //相机
-		//configure_stream("DISTANCE_SENSOR", 0.5f);
+		//旋翼不需要的消息
+		//configure_stream("NAV_CONTROLLER_OUTPUT", 1.5f);//固定翼的状态	
+		//configure_stream("VFR_HUD", 4.0f); //空速相关数据
+		//configure_stream("WIND_COV", 1.0f);
+		
+
 
 		//没人发布的消息
 		//configure_stream("COLLISION");
 		//configure_stream("DEBUG", 1.0f);
 		//configure_stream("DEBUG_VECT", 1.0f);
 		//configure_stream("NAMED_VALUE_FLOAT", 1.0f);
+		//configure_stream("ADSB_VEHICLE");
 
         break;
 
