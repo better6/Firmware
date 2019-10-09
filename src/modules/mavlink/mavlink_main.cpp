@@ -2052,9 +2052,9 @@ Mavlink::task_main(int argc, char *argv[])
 
 		//没人发布的消息
 		//configure_stream("COLLISION");
-		//configure_stream("DEBUG", 1.0f);
-		//configure_stream("DEBUG_VECT", 1.0f);
-		//configure_stream("NAMED_VALUE_FLOAT", 1.0f);
+		configure_stream("DEBUG", 1.0f);
+		configure_stream("DEBUG_VECT", 1.0f);
+		configure_stream("NAMED_VALUE_FLOAT", 1.0f);
 		//configure_stream("ADSB_VEHICLE");
 
         break;
@@ -2065,6 +2065,7 @@ Mavlink::task_main(int argc, char *argv[])
 
         //configure_stream("PING", 1.0f);
 		configure_stream("FOLLOW_TARGET", 50.0f);//这个数据太多了 换
+		//mavlink_log_info(&_mavlink_log_pub,"telem2配置成follow");
         break;
 
 	case MAVLINK_MODE_OSD:

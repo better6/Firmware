@@ -641,9 +641,11 @@ fi
 			mavlink start -d ${MAVLINK_COMPANION_DEVICE} -b 921600 -m onboard -r 80000 -x -f
 		fi
 	fi
+
+	#这里由参数SYS_COMPANION决定telem2的使用，这里编队telem2地面站参数使用companion，实际这里修改波特率为115200
 	if param compare SYS_COMPANION 57600
 	then
-		mavlink start -d ${MAVLINK_COMPANION_DEVICE} -b 57600 -m onboard -r 5000 -x -f
+		mavlink start -d ${MAVLINK_COMPANION_DEVICE} -b 115200 -m onboard -r 5000 -x -f
 	fi
 	if param compare SYS_COMPANION 460800
 	then
