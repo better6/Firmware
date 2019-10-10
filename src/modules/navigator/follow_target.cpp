@@ -231,6 +231,7 @@ void FollowTarget::on_active()
 			//当前飞机距离目标的距离+要和目标保持的参数距离<5米，已经“近身了”,放大范围看看跟速度是什么样的效果？？？现在5米以内才跟速度呢，注意我们的设置的跟随距离6米 是一直在跟随位置 不会进入跟随速度
 			_radius_exited = ((_target_position_offset + _slave_master_dis).length() > (float) TARGET_ACCEPTANCE_RADIUS_M * 1.5f);
 			_radius_entered = ((_target_position_offset + _slave_master_dis).length() < (float) TARGET_ACCEPTANCE_RADIUS_M);
+			//mavlink_log_info(&_mavlink_log_pub, "enter=%d,   exit=%d ", _radius_entered,_radius_exited);
 
 			// to keep the velocity increase/decrease smooth      保持速度的平滑
 			// calculate how many velocity increments/decrements  计算速度增量
@@ -240,7 +241,6 @@ void FollowTarget::on_active()
 			// velocity as the position gap increases since
 			// just traveling at the exact velocity of the target will not
 			// get any closer or farther from the target
-
 			_step_vel = (_est_target_vel - _current_vel) + (_target_position_offset + _slave_master_dis) * FF_K;
 			_step_vel /= (dt_ms / 1000.0F * (float) INTERPOLATION_PNTS);
 			_step_time_in_ms = (dt_ms / (float) INTERPOLATION_PNTS);
@@ -486,6 +486,16 @@ void FollowTarget::formation_pre()
 	_param_follow_dis = _param_tracking_dist.get() < 3.0F ? 3.0F : _param_tracking_dist.get();
 	//重新读取高度
 	_param_follow_alt = _param_min_alt.get();
+
+	// if(2==_vehicle_id) {
+	// 	_param_follow_alt=8;
+	// }
+	// else if(3==_vehicle_id){
+	// 	_param_follow_alt=10;
+	// }
+	// else{
+
+	// }
 
 	if(_curr_shape==TRIANGLE){//实现三角队形
 		

@@ -103,15 +103,15 @@ private:
 	//cos  -sin 0
 	//sin  cos  0
 	//0     0   1
-	static constexpr float _follow_position_matricies[6][9] = {     //下面的角度不正确,不要随意改动 _param_follow_side在用
-		{ 1.0F,  0.0F, 0.0F,  0.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 0度   follow front
-		{-1.0F,  0.0F, 0.0F,  0.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 180度 follow behind
-		{-1.0F,  1.0F, 0.0F, -1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // -225度 自己添加的左后侧  behind*right 
-		{-1.0F, -1.0F, 0.0F,  1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 135度 自己添加的右后侧   left*behind
-		{ 0.0F, -1.0F, 0.0F,  1.0F,  0.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 90都 follow right	
-		{ 0.0F,  1.0F, 0.0F, -1.0F,  0.0F, 0.0F, 0.0F, 0.0F, 1.0F} //  -90度 follow left sides
-		// { 1.0F, -1.0F, 0.0F,  1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 45都 follow right	
-		// { 1.0F,  1.0F, 0.0F, -1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F} //  -45度 follow left side
+	static constexpr float _follow_position_matricies[6][9] = {     //以下这些方位没做,不要随意改动因为代码有用这些顺序 _param_follow_side在用
+		{ 1.0F,  0.0F, 0.0F,  0.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F},    // 0度   前方   follow front
+		{-1.0F,  0.0F, 0.0F,  0.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F},    // 180度 后方   follow behind
+		{-1.0F,  1.0F, 0.0F, -1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F},    //-225度 左后侧  behind*right 
+		{-1.0F, -1.0F, 0.0F,  1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F},    // 135度 右后侧  left*behind
+		{ 0.0F, -1.0F, 0.0F,  1.0F,  0.0F, 0.0F, 0.0F, 0.0F, 1.0F},    // 90都  右侧   follow right	
+		{ 0.0F,  1.0F, 0.0F, -1.0F,  0.0F, 0.0F, 0.0F, 0.0F, 1.0F}     //-90度  左侧   follow left sides
+		// { 1.0F, -1.0F, 0.0F,  1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 45都  右前方  follow right	
+		// { 1.0F,  1.0F, 0.0F, -1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}  //-45度  左前方  follow left side
 		                                                            
 
 	};
