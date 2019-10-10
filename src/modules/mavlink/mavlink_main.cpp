@@ -2037,25 +2037,25 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);
 		configure_stream("SYS_STATUS", 1.0f);
 		configure_stream("DISTANCE_SENSOR", 0.5f);
+		configure_stream("VFR_HUD", 2.0f); //这是速度数据不可屏蔽
 
 
 		//目前数据精简不需要的数据
-		//configure_stream("OPTICAL_FLOW_RAD", 1.0f);//光流
-		//configure_stream("VISION_POSITION_ESTIMATE", 1.0f);
+		// configure_stream("OPTICAL_FLOW_RAD", 1.0f);//光流
+		// configure_stream("VISION_POSITION_ESTIMATE", 1.0f);
 
 		//旋翼不需要的消息
 		//configure_stream("NAV_CONTROLLER_OUTPUT", 1.5f);//固定翼的状态	
-		//configure_stream("VFR_HUD", 4.0f); //空速相关数据
 		//configure_stream("WIND_COV", 1.0f);
 		
 
 
 		//没人发布的消息
-		//configure_stream("COLLISION");
+		configure_stream("COLLISION");
 		configure_stream("DEBUG", 1.0f);
 		configure_stream("DEBUG_VECT", 1.0f);
 		configure_stream("NAMED_VALUE_FLOAT", 1.0f);
-		//configure_stream("ADSB_VEHICLE");
+		configure_stream("ADSB_VEHICLE");
 
         break;
 
