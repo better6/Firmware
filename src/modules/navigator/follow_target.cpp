@@ -215,7 +215,7 @@ void FollowTarget::on_active()
 
 			// if the target is moving add an offset and rotation
 			//如果目标有速度正在移动，则添加偏移和旋转，这个偏移和旋转指什么，要解决什么问题，前馈目标的位置？？5
-			if (_est_target_vel.length() > 1.5F) { //实测特别有效 主机停下时  从机也会稳定停下，不会乱飘，只有在检测在主机速度时 才会继续跟。从机的最大速度可以大于主机。
+			if (_est_target_vel.length() > 0.8F) { //实测特别有效 主机停下时  从机也会稳定停下，不会乱飘，只有在检测在主机速度时 才会继续跟。从机的最大速度可以大于主机。
 				//如果目标（目标）有移动，则目标在移动过程中 从机也要找到位置进行跟随，从机只是从目标那里获取经度纬度高度数据
 				//目标在转向的时候 并且有速度，这时候从机也会转向保持跟在目标后面，主要是速度原因，而非航向
 				//如果不是转向 目标在直走，ok啊 从机距离主句还是要有一个offset，即保持距离
@@ -248,7 +248,7 @@ void FollowTarget::on_active()
 			// if we are less than 1 meter from the target don't worry about trying to yaw
 			// lock the yaw until we are at a distance that makes sense
 			//计算航向差得出偏航角速度 应该是希望从机机头指向主机 实际效果特别差从机航向乱转，因为是因为主从位置不准的原因导致的。最后不使用。
-			if ((_slave_master_dis).length() > 0.8F) { 
+			if ((_slave_master_dis).length() > 1.0F) { 
 
 				// yaw rate smoothing
 
