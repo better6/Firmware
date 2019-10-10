@@ -293,7 +293,7 @@ PARAM_DEFINE_FLOAT(MC_YAW_FF, 0.5f);
  * @increment 5
  * @group Multicopter Attitude Control
  */
-PARAM_DEFINE_FLOAT(MC_ROLLRATE_MAX, 220.0f);
+PARAM_DEFINE_FLOAT(MC_ROLLRATE_MAX, 100.0f);  //最大横衮角速度
 
 /**
  * Max pitch rate
@@ -312,7 +312,7 @@ PARAM_DEFINE_FLOAT(MC_ROLLRATE_MAX, 220.0f);
  * @increment 5
  * @group Multicopter Attitude Control
  */
-PARAM_DEFINE_FLOAT(MC_PITCHRATE_MAX, 220.0f);
+PARAM_DEFINE_FLOAT(MC_PITCHRATE_MAX, 100.0f); //最大pitch角速度
 
 /**
  * Max yaw rate
@@ -324,7 +324,7 @@ PARAM_DEFINE_FLOAT(MC_PITCHRATE_MAX, 220.0f);
  * @increment 5
  * @group Multicopter Attitude Control
  */
-PARAM_DEFINE_FLOAT(MC_YAWRATE_MAX, 200.0f);
+PARAM_DEFINE_FLOAT(MC_YAWRATE_MAX, 100.0f); //最大yaw角速度
 
 /**
  * Max yaw rate in auto mode
@@ -339,7 +339,7 @@ PARAM_DEFINE_FLOAT(MC_YAWRATE_MAX, 200.0f);
  * @increment 5
  * @group Multicopter Attitude Control
  */
-PARAM_DEFINE_FLOAT(MC_YAWRAUTO_MAX, 45.0f);
+PARAM_DEFINE_FLOAT(MC_YAWRAUTO_MAX, 30.0f);  //自动模式下 最大yaw角速度
 
 /**
  * Max acro roll rate
@@ -454,7 +454,7 @@ PARAM_DEFINE_FLOAT(MC_ACRO_SUPEXPOY, 0.7f);
  * @increment 0.01
  * @group Multicopter Attitude Control
  */
-PARAM_DEFINE_FLOAT(MC_RATT_TH, 0.8f);
+PARAM_DEFINE_FLOAT(MC_RATT_TH, 1.0f);
 
 /**
  * Battery power level scaler

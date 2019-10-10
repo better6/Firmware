@@ -248,7 +248,7 @@ void FollowTarget::on_active()
 			// if we are less than 1 meter from the target don't worry about trying to yaw
 			// lock the yaw until we are at a distance that makes sense
 			//计算航向差得出偏航角速度 应该是希望从机机头指向主机 实际效果特别差从机航向乱转，因为是因为主从位置不准的原因导致的。最后不使用。
-			if ((_slave_master_dis).length() > 1.0F) { 
+			if ((_slave_master_dis).length() > 0.8F) { 
 
 				// yaw rate smoothing
 

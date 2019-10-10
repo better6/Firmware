@@ -253,7 +253,7 @@ PARAM_DEFINE_FLOAT(MPC_XY_CRUISE, 5.0f); //自动模式下的速度
  * @decimal 2
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_CRUISE_90, 3.0f);  //90度航点时候的巡航速度
+PARAM_DEFINE_FLOAT(MPC_CRUISE_90, 1.0f);  //90度航点时候的巡航速度
 
 /**
  * Maximum horizontal velocity setpoint for manual controlled mode
@@ -282,7 +282,7 @@ PARAM_DEFINE_FLOAT(MPC_VEL_MANUAL, 10.0f); //手动模式下最大速度
  * @decimal 2
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_XY_VEL_MAX, 12.0f);  //水平最大的速度  这是所有速度的上限
+PARAM_DEFINE_FLOAT(MPC_XY_VEL_MAX, 10.0f);  //水平最大的速度  这是所有速度的上限
 
 /**
  * Maximum tilt angle in air
@@ -295,7 +295,7 @@ PARAM_DEFINE_FLOAT(MPC_XY_VEL_MAX, 12.0f);  //水平最大的速度  这是所�
  * @decimal 1
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_TILTMAX_AIR, 45.0f); //飞机在空中最大倾斜角
+PARAM_DEFINE_FLOAT(MPC_TILTMAX_AIR, 30.0f); //飞机在空中最大倾斜角
 
 /**
  * Maximum tilt during landing
@@ -318,7 +318,7 @@ PARAM_DEFINE_FLOAT(MPC_TILTMAX_LND, 12.0f);
  * @decimal 1
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_LAND_SPEED, 0.7f);
+PARAM_DEFINE_FLOAT(MPC_LAND_SPEED, 0.5f);
 
 /**
  * Takeoff climb rate
@@ -340,7 +340,7 @@ PARAM_DEFINE_FLOAT(MPC_TKO_SPEED, 1.5f);
  * @decimal 1
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_MAN_TILT_MAX, 35.0f);
+PARAM_DEFINE_FLOAT(MPC_MAN_TILT_MAX, 30.0f);
 
 /**
  * Max manual yaw rate
@@ -351,7 +351,7 @@ PARAM_DEFINE_FLOAT(MPC_MAN_TILT_MAX, 35.0f);
  * @decimal 1
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_MAN_Y_MAX, 200.0f);
+PARAM_DEFINE_FLOAT(MPC_MAN_Y_MAX, 150.0f);
 
 /**
  * Deadzone of sticks where position hold is enabled
@@ -372,7 +372,7 @@ PARAM_DEFINE_FLOAT(MPC_HOLD_DZ, 0.1f);
  * @decimal 2
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_HOLD_MAX_XY, 0.8f);
+PARAM_DEFINE_FLOAT(MPC_HOLD_MAX_XY, 0.5f);
 
 /**
  * Maximum vertical velocity for which position hold is enabled (use 0 to disable check)
@@ -406,7 +406,7 @@ PARAM_DEFINE_FLOAT(MPC_VELD_LP, 5.0f);
  * @decimal 2
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_ACC_HOR_MAX, 10.0f);  //最大的水平加速度
+PARAM_DEFINE_FLOAT(MPC_ACC_HOR_MAX, 2.0f);  //最大的水平加速度
 
 /**
  * Acceleration for auto and for manual
@@ -419,7 +419,7 @@ PARAM_DEFINE_FLOAT(MPC_ACC_HOR_MAX, 10.0f);  //最大的水平加速度
  * @group Multicopter Position Control
  */
 
-PARAM_DEFINE_FLOAT(MPC_ACC_HOR, 5.0f);  //加速度
+PARAM_DEFINE_FLOAT(MPC_ACC_HOR, 2.0f);  //加速度
 
 /**
  * Slow horizontal manual deceleration for manual mode
@@ -431,7 +431,7 @@ PARAM_DEFINE_FLOAT(MPC_ACC_HOR, 5.0f);  //加速度
  * @decimal 2
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_DEC_HOR_SLOW, 5.0f);  //减速加速度
+PARAM_DEFINE_FLOAT(MPC_DEC_HOR_SLOW, 1.0f);  //减速加速度
 
 /**
  * Horizontal acceleration in manual modes when te estimator speed limit is removed.
@@ -458,7 +458,7 @@ PARAM_DEFINE_FLOAT(MPC_ACC_HOR_ESTM, 0.5f); //视觉、光溜啥的加速度
  * @decimal 2
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_ACC_UP_MAX, 10.0f);
+PARAM_DEFINE_FLOAT(MPC_ACC_UP_MAX, 5.0f);
 
 /**
  * Maximum vertical acceleration in velocity controlled modes down
@@ -470,7 +470,7 @@ PARAM_DEFINE_FLOAT(MPC_ACC_UP_MAX, 10.0f);
  * @decimal 2
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_ACC_DOWN_MAX, 10.0f);
+PARAM_DEFINE_FLOAT(MPC_ACC_DOWN_MAX, 5.0f);
 
 /**
  * Maximum jerk in manual controlled mode for BRAKING to zero.
@@ -499,7 +499,7 @@ PARAM_DEFINE_FLOAT(MPC_JERK_MAX, 0.0f);
  * @decimal 2
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_JERK_MIN, 1.0f);
+PARAM_DEFINE_FLOAT(MPC_JERK_MIN, 0.5f);
 
 /**
  * Altitude control mode.
@@ -564,7 +564,7 @@ PARAM_DEFINE_FLOAT(MPC_Z_MAN_EXPO, 0.0f);
  * @decimal 1
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_LAND_ALT1, 10.0f);
+PARAM_DEFINE_FLOAT(MPC_LAND_ALT1, 6.0f);
 
 /**
  * Altitude for 2. step of slow landing (landing)
@@ -578,7 +578,7 @@ PARAM_DEFINE_FLOAT(MPC_LAND_ALT1, 10.0f);
  * @decimal 1
  * @group Multicopter Position Control
  */
-PARAM_DEFINE_FLOAT(MPC_LAND_ALT2, 5.0f);
+PARAM_DEFINE_FLOAT(MPC_LAND_ALT2, 3.0f);
 
 /**
  * Position control smooth takeoff ramp time constant
