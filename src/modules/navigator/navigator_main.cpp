@@ -455,6 +455,7 @@ Navigator::run()
 
 		}
 
+
 		if(_vcmd_second>0)//已经开始编队 已经切换模式
 		{
 			_vcmd_second++;
