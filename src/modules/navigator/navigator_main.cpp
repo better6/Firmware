@@ -173,30 +173,26 @@ Navigator::formation_vcmd(uint8_t order )
 {
 	if(order==1)//开始编队
 	{
-		if(_param_vehicle_id.get()==1)//1号主机编队切mision
+			if(_param_vehicle_id.get()==1)//1号主机编队切mision
 		{
-				vcmd.param1 = 213;
-				vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
-				vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_MISSION;
-				vcmd.param4 = 0;
-				vcmd.param5 = 0;
-				vcmd.param6 = 0;
-				vcmd.param7 = 0;
-				vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
-				mavlink_log_info(&_mavlink_log_pub, "#开始编队：主机切mission"); 
-				//warnx("接收到开始编队 主机切misison");
+			vcmd.param1 = 213;
+			vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
+			vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_MISSION;
+			vcmd.param4 = 0;
+			vcmd.param5 = 0;
+			vcmd.param6 = 0;
+			vcmd.param7 = 0;
+			vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
 		}
 		else{//从机编队先切takeoff 后切follow
-				vcmd.param1 = 213;
-				vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
-				vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF;
-				vcmd.param4 = 0;
-				vcmd.param5 = 0;
-				vcmd.param6 = 0;
-				vcmd.param7 = 0;
-				vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
-				mavlink_log_info(&_mavlink_log_pub, "#开始编队：从机切takeoff"); 
-				//warnx("接收到开始编队 从机切takeoff");
+			vcmd.param1 = 213;
+			vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
+			vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET;
+			vcmd.param4 = 0;
+			vcmd.param5 = 0;
+			vcmd.param6 = 0;
+			vcmd.param7 = 0;
+			vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
 		}
 		vcmd.timestamp = hrt_absolute_time();
 		vcmd.source_system = _vstatus.system_id;
@@ -210,8 +206,8 @@ Navigator::formation_vcmd(uint8_t order )
 
 		} else {
 			orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, &vcmd);
+			_vcmd_second=0;
 		}
-
 	}
 	else if(order==3)//结束编队所有飞机切rtl
 	{
@@ -237,43 +233,9 @@ Navigator::formation_vcmd(uint8_t order )
 		} else {
 			orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, &vcmd);
 		}
-		mavlink_log_info(&_mavlink_log_pub, "#结束编队：所有飞机切rtl");
-		//warnx("接收到结束编队 所有切rtl");
 
 	}
-	else if(order==4){//开始编队 从机切follow
-		if(_param_vehicle_id.get()!=1){//从机切
-
-			vcmd.param1 = 213;
-			vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
-			vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET;
-			vcmd.param4 = 0;
-			vcmd.param5 = 0;
-			vcmd.param6 = 0;
-			vcmd.param7 = 0;
-			vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;		
-			mavlink_log_info(&_mavlink_log_pub, "开始编队：从机切follow"); 	
-			
-			vcmd.timestamp = hrt_absolute_time();
-			vcmd.source_system = _vstatus.system_id;
-			vcmd.source_component = _vstatus.component_id;
-			vcmd.target_system = _vstatus.system_id;
-			vcmd.target_component  = _vstatus.component_id;
-			vcmd.confirmation = 1;
-
-			if (_vehicle_cmd_pub == nullptr) {
-				_vehicle_cmd_pub = orb_advertise(ORB_ID(vehicle_command), &vcmd);
-
-			} else {
-				orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, &vcmd);
-				_vcmd_second=0;
-				//warnx("开始编队后 从机切follow");
-			}
-		}
-		
-
-	}
-	else if(order==5)//开始编队 解锁
+	else if(order==4)//全部解锁
 	{
 		vcmd.param1 = 1.0f;
 		vcmd.param2 = 0;
@@ -296,48 +258,31 @@ Navigator::formation_vcmd(uint8_t order )
 		} else {
 			orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, &vcmd);
 		}
-		//warnx("接收到开始编队 所有飞机解锁");
 	}
-	else if(order==6)//第二次切开始编队
-	{
-		if(_param_vehicle_id.get()==1)//1号主机编队切mision
-		{
-				vcmd.param1 = 213;
-				vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
-				vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_MISSION;
-				vcmd.param4 = 0;
-				vcmd.param5 = 0;
-				vcmd.param6 = 0;
-				vcmd.param7 = 0;
-				vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
-				mavlink_log_info(&_mavlink_log_pub, "#二次开始编队：主机切mission"); 
-				//warnx("二次开始编队 主机切misison");
-		}
-		else{//从机编队先切takeoff 后切follow
-				vcmd.param1 = 213;
-				vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
-				vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET;
-				vcmd.param4 = 0;
-				vcmd.param5 = 0;
-				vcmd.param6 = 0;
-				vcmd.param7 = 0;
-				vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;
-				mavlink_log_info(&_mavlink_log_pub, "#二次开始编队：从机切follow"); 
-				//warnx("二次开始编队 从机切follow");
-		}
-		vcmd.timestamp = hrt_absolute_time();
-		vcmd.source_system = _vstatus.system_id;
-		vcmd.source_component = _vstatus.component_id;
-		vcmd.target_system = _vstatus.system_id;
-		vcmd.target_component  = _vstatus.component_id;
-		vcmd.confirmation = 1;
+	else if(order==5){//全部切takeoff
 
-		if (_vehicle_cmd_pub == nullptr) {
-			_vehicle_cmd_pub = orb_advertise(ORB_ID(vehicle_command), &vcmd);
+			vcmd.param1 = 213;
+			vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
+			vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF;
+			vcmd.param4 = 0;
+			vcmd.param5 = 0;
+			vcmd.param6 = 0;
+			vcmd.param7 = 0;
+			vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;		
+			
+			vcmd.timestamp = hrt_absolute_time();
+			vcmd.source_system = _vstatus.system_id;
+			vcmd.source_component = _vstatus.component_id;
+			vcmd.target_system = _vstatus.system_id;
+			vcmd.target_component  = _vstatus.component_id;
+			vcmd.confirmation = 1;
 
-		} else {
-			orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, &vcmd);
-		}
+			if (_vehicle_cmd_pub == nullptr) {
+				_vehicle_cmd_pub = orb_advertise(ORB_ID(vehicle_command), &vcmd);
+
+			} else {
+				orb_publish(ORB_ID(vehicle_command), _vehicle_cmd_pub, &vcmd);
+			}
 	}
 	else{
 
@@ -489,19 +434,19 @@ Navigator::run()
 				{				
 					if(_formation.start_end!=_formation_pre.start_end)//第一次切开始编队
 					{	
-						formation_vcmd(5);//先解锁所有的飞机
-						//warnx("第一次接收到 开始编队");
+						formation_vcmd(4);//4 解锁所有的飞机
+						//warnx("1 第一次开始编队 解锁所有的飞机");
 						_vcmd_second++;
 					}
 					else{ //刚刚有在开始编队 现在是第二次切开始编队
-						formation_vcmd(6);//先解锁所有的飞机
-						//warnx("二次开始编队，主机切misison 从机切follow");
+						formation_vcmd(1);//1 主机切mission 从机切follow
+						//warnx("2 继续编队，主机切misison 从机切follow");
 					}
 				}
 				else if(_formation.start_end==3)//结束编队
 				{	
-					//warnx("接收到 结束编队");
 					formation_vcmd(3);
+					//warnx("3 结束编队 所有切rtl");
 				}
 				else{
 					//编队的实现在follow_target.cpp中实现，这里只切换模式实现开始编队和结束编队
@@ -515,17 +460,20 @@ Navigator::run()
 			_vcmd_second++;
 			//warnx("_vcmd_second=%d",_vcmd_second);
 
-			if(_vcmd_second<3){
-				formation_vcmd(5);
+			if(_vcmd_second<5){
+				formation_vcmd(4);
+				//warnx("4 第一次编队 所有飞机解锁");
 			}
 
-			else if((_vcmd_second<8)&&(_vcmd_second>5)){
-				formation_vcmd(1);//开始编队 切模式
+			else if((_vcmd_second<10)&&(_vcmd_second>5)){
+				formation_vcmd(5);
+				//warnx("5 第一次编队 所有飞机切takeoff");
 			}
 			
-			else if(_vcmd_second>100){//解锁很久了 从机还需要再切一次follow
-				formation_vcmd(4);
+			else if(_vcmd_second>30){//解锁很久了 从机还需要再切一次follow
+				formation_vcmd(1);//
 				//_vcmd_second这里面有清零
+				//warnx("6 第一次编队 主机切mision 从机切follow");
 			}
 		}
 		
