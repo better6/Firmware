@@ -60,7 +60,7 @@
 
 using matrix::wrap_pi;
 
-constexpr float FollowTarget::_follow_position_matricies[6][9];
+constexpr float FollowTarget::_follow_position_matricies[8][9];
 
 FollowTarget::FollowTarget(Navigator *navigator) :
 	MissionBlock(navigator),
@@ -222,7 +222,7 @@ void FollowTarget::on_active()
 				//这一句主要就是实现从机对目标保持一定距离
 				_target_position_offset = _rot_matrix * _est_target_vel.normalized() * _param_follow_dis;//实测 没有旋转矩阵 无法保持方位？？？？为什么
 			}
-
+	
 			// are we within the target acceptance radius?
 			// give a buffer to exit/enter the radius to give the velocity controller a chance to catch up
 			//我们是否在目标接受半径范围内？
@@ -231,7 +231,7 @@ void FollowTarget::on_active()
 			//当前飞机距离目标的距离+要和目标保持的参数距离<5米，已经“近身了”,放大范围看看跟速度是什么样的效果？？？现在5米以内才跟速度呢，注意我们的设置的跟随距离6米 是一直在跟随位置 不会进入跟随速度
 			_radius_exited = ((_target_position_offset + _slave_master_dis).length() > (float) TARGET_ACCEPTANCE_RADIUS_M * 1.5f);
 			_radius_entered = ((_target_position_offset + _slave_master_dis).length() < (float) TARGET_ACCEPTANCE_RADIUS_M);
-			//mavlink_log_info(&_mavlink_log_pub, "enter=%d,   exit=%d ", _radius_entered,_radius_exited);
+			 mavlink_log_info(&_mavlink_log_pub, "enter=%d,   exit=%d ", _radius_entered,_radius_exited);
 
 			// to keep the velocity increase/decrease smooth      保持速度的平滑
 			// calculate how many velocity increments/decrements  计算速度增量
@@ -487,15 +487,15 @@ void FollowTarget::formation_pre()
 	//重新读取高度
 	_param_follow_alt = _param_min_alt.get();
 
-	// if(2==_vehicle_id) {
-	// 	_param_follow_alt=8;
-	// }
-	// else if(3==_vehicle_id){
-	// 	_param_follow_alt=10;
-	// }
-	// else{
+	if(2==_vehicle_id) {
+		_param_follow_alt=8;
+	}
+	else if(3==_vehicle_id){
+		_param_follow_alt=10;
+	}
+	else{
 
-	// }
+	}
 
 	if(_curr_shape==TRIANGLE){//实现三角队形
 		
@@ -504,9 +504,17 @@ void FollowTarget::formation_pre()
 		else                   {  _param_follow_side=1;  }
 	}
 	else if(_curr_shape==HORIZONTAL){
-		if(2==_vehicle_id)     {  _param_follow_side=5;  } //2号飞机左侧
-		else if(3==_vehicle_id){  _param_follow_side=4;  } //3号飞机飞右侧
-		else                   {  _param_follow_side=1;  }
+		if(_est_target_vel.length() > 0.8F){
+			if(2==_vehicle_id)     {  _param_follow_side=7;  } //2号飞机左侧
+			else if(3==_vehicle_id){  _param_follow_side=6;  } //3号飞机飞右侧
+			else                   {  _param_follow_side=1;  }
+		}
+		else{
+			if(2==_vehicle_id)     {  _param_follow_side=5;  } //2号飞机左侧
+			else if(3==_vehicle_id){  _param_follow_side=4;  } //3号飞机飞右侧
+			else                   {  _param_follow_side=1;  }
+		}
+
 	}
 	else if(_curr_shape==VERTICAL){
 		
