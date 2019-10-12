@@ -4222,6 +4222,7 @@ protected:
 				//uint64 time_utc_usec		# Timestamp (microseconds, UTC), this is the timestamp which comes from the gps module. It might be unavailable right after cold start, indicated by a value of 0 
 				
 				//发布消息时的utc时间
+				//主机时间怎么算 待讨论
 				//msg.custom_state = gps.time_utc_usec*1000 +(msg.timestamp - gps.timestamp); //前面单位是ms 后面是us
 				//msg.custom_state = gps.time_utc_usec +(msg.timestamp - gps.timestamp); //单位没统一 应该也能用
 				msg.custom_state = gps.time_utc_usec;
