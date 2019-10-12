@@ -5,3 +5,5 @@ float32 vy			# target vel in y
 float32 vx			# target vel in x
 float32 vz			# target vel in z 
 uint8 est_cap # target reporting capabilities
+
+uint64 master_utc   #记录下接收到的主机的utc时间

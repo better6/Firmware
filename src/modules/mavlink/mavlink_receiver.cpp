@@ -2119,6 +2119,12 @@ void MavlinkReceiver::handle_message_follow_target(mavlink_message_t *msg)
 	follow_target_topic.lon = follow_target_msg.lon * 1e-7;
 	follow_target_topic.alt = follow_target_msg.alt;
 
+	follow_target_topic.vx  = follow_target_msg.vel[0]; //注意这是来源与mavlink_message.cpp主机发送过来的速度数据，数据源vehicle_global_position 是NED速度。
+	follow_target_topic.vy  = follow_target_msg.vel[1];
+	follow_target_topic.vz  = follow_target_msg.vel[2];
+
+	follow_target_topic.master_utc = follow_target_msg.custom_state;
+
 	//如果切换到follow_target模式，外部只需要通过FOLLOW_TARGET消息发送经度纬度高度数据即可。
 	//这个消息里还有很多其他数据还没使用。
 	//ORB_ID(follow_target)谁在用，只有一处在用follow_target.cpp在用，就是follow_target飞行模式在用。

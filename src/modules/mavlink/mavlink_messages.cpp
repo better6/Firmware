@@ -4222,7 +4222,9 @@ protected:
 				//uint64 time_utc_usec		# Timestamp (microseconds, UTC), this is the timestamp which comes from the gps module. It might be unavailable right after cold start, indicated by a value of 0 
 				
 				//发布消息时的utc时间
-				msg.custom_state = gps.time_utc_usec +(msg.timestamp - gps.timestamp);
+				//msg.custom_state = gps.time_utc_usec*1000 +(msg.timestamp - gps.timestamp); //前面单位是ms 后面是us
+				//msg.custom_state = gps.time_utc_usec +(msg.timestamp - gps.timestamp); //单位没统一 应该也能用
+				msg.custom_state = gps.time_utc_usec;
 
 
 				//把主机的速度也传递过去 用来弥补主从通信的延时问题
@@ -4239,7 +4241,7 @@ protected:
 
 				msg.lat =global.lat*10000000;
                 msg.lon =global.lon*10000000;
-                msg.alt =global.alt*1000;
+                msg.alt =global.alt;
 
 				//可全局搜索Follow_TARGET 一，主机发送位置数据，下面还有streams_list发送列表关于这些mavlink消息的发送不再累述
     		}
