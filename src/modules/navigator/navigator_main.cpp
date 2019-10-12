@@ -261,6 +261,14 @@ Navigator::formation_vcmd(uint8_t order )
 	}
 	else if(order==5){//全部切takeoff
 
+			//这种方式切takeoff实测也是ok的
+			// vcmd.param1 = 0;
+			// vcmd.param4 = _global_pos.yaw;
+			// vcmd.param5 = _home_pos.lat;
+			// vcmd.param6 = _home_pos.lon;
+			// vcmd.param7 = _home_pos.alt+2.5f;
+			// vcmd.command = 22;		
+
 			vcmd.param1 = 213;
 			vcmd.param2 = PX4_CUSTOM_MAIN_MODE_AUTO;
 			vcmd.param3 = PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF;
@@ -268,7 +276,7 @@ Navigator::formation_vcmd(uint8_t order )
 			vcmd.param5 = 0;
 			vcmd.param6 = 0;
 			vcmd.param7 = 0;
-			vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;		
+			vcmd.command = vehicle_command_s::VEHICLE_CMD_DO_SET_MODE;	
 			
 			vcmd.timestamp = hrt_absolute_time();
 			vcmd.source_system = _vstatus.system_id;
@@ -420,7 +428,7 @@ Navigator::run()
 
 		//根据FORMATION_TYPE mavlink消息，开发编队的开始与结束：开始的时候主机切mission解锁，从机先切takeoff 再切换 再切folllw_target
 
-		//mavlink_log_info(&_mavlink_log_pub, "wanggen---11--"); //打印可用
+		////mavlink_log_info(&_mavlink_log_pub, "wanggen---11--"); //打印可用
 
 		orb_check(_formation_type_sub, &updated);
 
@@ -435,18 +443,18 @@ Navigator::run()
 					if(_formation.start_end!=_formation_pre.start_end)//第一次切开始编队
 					{	
 						formation_vcmd(4);//4 解锁所有的飞机
-						//warnx("1 第一次开始编队 解锁所有的飞机");
+						//mavlink_log_info(&_mavlink_log_pub,"1 第一次开始编队 解锁所有的飞机");
 						_vcmd_second++;
 					}
 					else{ //刚刚有在开始编队 现在是第二次切开始编队
 						formation_vcmd(1);//1 主机切mission 从机切follow
-						//warnx("2 继续编队，主机切misison 从机切follow");
+						//mavlink_log_info(&_mavlink_log_pub,"2 继续编队，主机切misison 从机切follow");
 					}
 				}
 				else if(_formation.start_end==3)//结束编队
 				{	
 					formation_vcmd(3);
-					//warnx("3 结束编队 所有切rtl");
+					//mavlink_log_info(&_mavlink_log_pub,"3 结束编队 所有切rtl");
 				}
 				else{
 					//编队的实现在follow_target.cpp中实现，这里只切换模式实现开始编队和结束编队
@@ -459,22 +467,22 @@ Navigator::run()
 		if(_vcmd_second>0)//已经开始编队 已经切换模式
 		{
 			_vcmd_second++;
-			//warnx("_vcmd_second=%d",_vcmd_second);
+			////mavlink_log_info(&_mavlink_log_pub,"_vcmd_second=%d",_vcmd_second);
 
 			if(_vcmd_second<5){
 				formation_vcmd(4);
-				//warnx("4 第一次编队 所有飞机解锁");
+				//mavlink_log_info(&_mavlink_log_pub,"4 第一次编队 所有飞机解锁");
 			}
 
 			else if((_vcmd_second<10)&&(_vcmd_second>5)){
 				formation_vcmd(5);
-				//warnx("5 第一次编队 所有飞机切takeoff");
+				//mavlink_log_info(&_mavlink_log_pub,"5 第一次编队 所有飞机切takeoff");
 			}
 			
 			else if(_vcmd_second>30){//解锁很久了 从机还需要再切一次follow
 				formation_vcmd(1);//
 				//_vcmd_second这里面有清零
-				//warnx("6 第一次编队 主机切mision 从机切follow");
+				//mavlink_log_info(&_mavlink_log_pub,"6 第一次编队 主机切mision 从机切follow");
 			}
 		}
 		

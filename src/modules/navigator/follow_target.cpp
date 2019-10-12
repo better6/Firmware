@@ -231,7 +231,7 @@ void FollowTarget::on_active()
 			//当前飞机距离目标的距离+要和目标保持的参数距离<5米，已经“近身了”,放大范围看看跟速度是什么样的效果？？？现在5米以内才跟速度呢，注意我们的设置的跟随距离6米 是一直在跟随位置 不会进入跟随速度
 			_radius_exited = ((_target_position_offset + _slave_master_dis).length() > (float) TARGET_ACCEPTANCE_RADIUS_M * 1.5f);
 			_radius_entered = ((_target_position_offset + _slave_master_dis).length() < (float) TARGET_ACCEPTANCE_RADIUS_M);
-			 mavlink_log_info(&_mavlink_log_pub, "enter=%d,   exit=%d ", _radius_entered,_radius_exited);
+			 //mavlink_log_info(&_mavlink_log_pub, "enter=%d,   exit=%d ", _radius_entered,_radius_exited);
 
 			// to keep the velocity increase/decrease smooth      保持速度的平滑
 			// calculate how many velocity increments/decrements  计算速度增量
