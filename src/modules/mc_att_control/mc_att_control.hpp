@@ -55,7 +55,7 @@
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_rates_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
-
+#include <uORB/topics/position_setpoint_triplet.h>
 /**
  * Multicopter attitude control app start / stop handling function
  */
@@ -97,6 +97,7 @@ private:
 	 * Check for parameter update and handle it.
 	 */
 	void		battery_status_poll();
+	void        pos_triple_poll();
 	void		parameter_update_poll();
 	void		sensor_bias_poll();
 	void		sensor_correction_poll();
@@ -133,6 +134,7 @@ private:
 	int		_vehicle_status_sub{-1};	/**< vehicle status subscription */
 	int		_motor_limits_sub{-1};		/**< motor limits subscription */
 	int		_battery_status_sub{-1};	/**< battery status subscription */
+	int		_pos_sp_triplet_sub{-1};
 	int		_sensor_gyro_sub[MAX_GYRO_COUNT];	/**< gyro data subscription */
 	int		_sensor_correction_sub{-1};	/**< sensor thermal correction subscription */
 	int		_sensor_bias_sub{-1};		/**< sensor in-run bias correction subscription */
@@ -157,6 +159,7 @@ private:
 	struct actuator_controls_s		_actuators {};		/**< actuator controls */
 	struct vehicle_status_s			_vehicle_status {};	/**< vehicle status */
 	struct battery_status_s			_battery_status {};	/**< battery status */
+	struct position_setpoint_triplet_s _pos_triple {};	
 	struct sensor_gyro_s			_sensor_gyro {};	/**< gyro data before thermal correctons and ekf bias estimates are applied */
 	struct sensor_correction_s		_sensor_correction {};	/**< sensor thermal corrections */
 	struct sensor_bias_s			_sensor_bias {};	/**< sensor in-run bias corrections */

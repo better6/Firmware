@@ -61,7 +61,7 @@
  * @value 4 Terminate
  * @group Geofence
  */
-PARAM_DEFINE_INT32(GF_ACTION, 1);
+PARAM_DEFINE_INT32(GF_ACTION, 3);
 
 /**
  * Geofence altitude mode
@@ -115,7 +115,7 @@ PARAM_DEFINE_INT32(GF_COUNT, -1);
  * @increment 1
  * @group Geofence
  */
-PARAM_DEFINE_FLOAT(GF_MAX_HOR_DIST, 0);
+PARAM_DEFINE_FLOAT(GF_MAX_HOR_DIST, 1000);
 
 /**
  * Max vertical distance in meters.
@@ -128,4 +128,4 @@ PARAM_DEFINE_FLOAT(GF_MAX_HOR_DIST, 0);
  * @increment 1
  * @group Geofence
  */
-PARAM_DEFINE_FLOAT(GF_MAX_VER_DIST, 0);
+PARAM_DEFINE_FLOAT(GF_MAX_VER_DIST, 100);

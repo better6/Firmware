@@ -542,18 +542,26 @@ MissionBlock::mission_item_to_position_setpoint(const mission_item_s &item, posi
 
 	case NAV_CMD_TAKEOFF:
 
+		//这地方有bug 在代码里利用vehicle_command切换takeoff模式时，有的飞机可以成功起飞 如我们测试的410小飞机。，960打飞机，但是有的飞机却不能起飞如750飞机，
+		//有时候不能起飞的原因是进入了下面的SETPOINT_TYPE_POSITION，应该是落地检测的原因，再深入的跟踪没有去做
+		//参考了1,5,5代码 在1.5.5代码里只有如下的操作，没有屏蔽的SETPOINT_TYPE_POSITION内容
+		//现在先这样解决问题，更深入的原因还可以跟踪
+
+		
 		// if already flying (armed and !landed) treat TAKEOFF like regular POSITION
-		if ((_navigator->get_vstatus()->arming_state == vehicle_status_s::ARMING_STATE_ARMED)
-		    && !_navigator->get_land_detected()->landed) {
+		// if ((_navigator->get_vstatus()->arming_state == vehicle_status_s::ARMING_STATE_ARMED)
+		//     && !_navigator->get_land_detected()->landed) {
 
-			sp->type = position_setpoint_s::SETPOINT_TYPE_POSITION;
+		// 	sp->type = position_setpoint_s::SETPOINT_TYPE_POSITION;
+		// 	mavlink_log_info(&_mavlink_log_pub,"----TYPE_POSITION");
 
-		} else {
+		// } else {
 			sp->type = position_setpoint_s::SETPOINT_TYPE_TAKEOFF;
 
 			// set pitch and ensure that the hold time is zero
 			sp->pitch_min = item.pitch_min;
-		}
+			//mavlink_log_info(&_mavlink_log_pub,"----NAV_CMD_TAKEOFF");
+		// }
 
 		break;
 

@@ -317,6 +317,18 @@ MulticopterAttitudeControl::battery_status_poll()
 }
 
 void
+MulticopterAttitudeControl::pos_triple_poll()
+{
+	/* check if there is a new message */
+	bool updated;
+	orb_check(_pos_sp_triplet_sub, &updated);
+
+	if (updated) {
+		orb_copy(ORB_ID(position_setpoint_triplet), _pos_sp_triplet_sub, &_pos_triple);
+	}
+}
+
+void
 MulticopterAttitudeControl::vehicle_attitude_poll()
 {
 	/* check if there is a new message */
@@ -601,6 +613,7 @@ MulticopterAttitudeControl::run()
 	_vehicle_status_sub = orb_subscribe(ORB_ID(vehicle_status));
 	_motor_limits_sub = orb_subscribe(ORB_ID(multirotor_motor_limits));
 	_battery_status_sub = orb_subscribe(ORB_ID(battery_status));
+	_pos_sp_triplet_sub = orb_subscribe(ORB_ID(position_setpoint_triplet));
 
 	_gyro_count = math::min(orb_group_count(ORB_ID(sensor_gyro)), MAX_GYRO_COUNT);
 
@@ -678,6 +691,7 @@ MulticopterAttitudeControl::run()
 			vehicle_status_poll();
 			vehicle_motor_limits_poll();
 			battery_status_poll();
+			pos_triple_poll();
 			vehicle_attitude_poll();
 			sensor_correction_poll();
 			sensor_bias_poll();
@@ -750,8 +764,19 @@ MulticopterAttitudeControl::run()
 
 				/* publish actuator controls */
 				_actuators.control[0] = (PX4_ISFINITE(_att_control(0))) ? _att_control(0) : 0.0f;
+				_actuators.control[0] = math::constrain(_actuators.control[0], -0.3f, 0.3f);
+
 				_actuators.control[1] = (PX4_ISFINITE(_att_control(1))) ? _att_control(1) : 0.0f;
-				_actuators.control[2] = (PX4_ISFINITE(_att_control(2))) ? _att_control(2) : 0.0f;
+				_actuators.control[1] = math::constrain(_actuators.control[1], -0.3f, 0.3f);
+
+				if (_pos_triple.current.type == position_setpoint_s::SETPOINT_TYPE_IDLE && !_v_control_mode.flag_control_manual_enabled){ 
+					_actuators.control[2] = 0.0f;
+				}
+				else{
+					_actuators.control[2] = (PX4_ISFINITE(_att_control(2))) ? _att_control(2) : 0.0f;
+				}
+				_actuators.control[2] = math::constrain(_actuators.control[2], -1.0f, 1.0f); //zlfxg20170711
+				
 				_actuators.control[3] = (PX4_ISFINITE(_thrust_sp)) ? _thrust_sp : 0.0f;
 				_actuators.control[7] = _v_att_sp.landing_gear;
 				_actuators.timestamp = hrt_absolute_time();
@@ -847,6 +872,7 @@ MulticopterAttitudeControl::run()
 	orb_unsubscribe(_vehicle_status_sub);
 	orb_unsubscribe(_motor_limits_sub);
 	orb_unsubscribe(_battery_status_sub);
+	orb_unsubscribe(_pos_sp_triplet_sub);
 
 	for (unsigned s = 0; s < _gyro_count; s++) {
 		orb_unsubscribe(_sensor_gyro_sub[s]);
