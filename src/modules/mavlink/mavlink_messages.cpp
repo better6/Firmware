@@ -4205,36 +4205,30 @@ protected:
 			// return true;
 
 			//订阅全球位置坐标
-            vehicle_global_position_s globalpos = {};
-            vehicle_gps_position_s gpspos = {};
+            vehicle_global_position_s global = {};
+            vehicle_gps_position_s    gps = {};
 
-			if (_globalpos_sub->update(&globalpos)) 
+			if (_globalpos_sub->update(&global)) 
 			{
                 updated = true;
 
-				_gpspos_sub->update(&gpspos);
+				_gpspos_sub->update(&gps);
                //这里暂不使用global定位的时间,因为global时间会受其他传感器的融合状态影响
-				 msg.timestamp =hrt_absolute_time();; //+ (globalpos.timestamp - gpspos.timestamp);  //传递主机GPS数据的UTC时间
+				 msg.timestamp =hrt_absolute_time();; //+ (global.timestamp - gps.timestamp);  //传递主机GPS数据的UTC时间
 
-				// 整理主机的实际位置/速度/偏航角,作为从机目标位置的依据
-				// 采用主机gps位置作为从机跟随的依据，实际测试是可行的，但是gps位置容易波动，尤其z轴数据变化比较大。
-				// int32 lat # Latitude in 1E-7 degrees
-				// int32 lon # Longitude in 1E-7 degrees 
-				// int32 alt # Altitude in 1E-3 meters above MSL, (millimetres)
-
-                // msg.lat = gpspos.lat;
-                // msg.lon = gpspos.lon;
-                // msg.alt = gpspos.alt;
+				//传递主机UTC时间过去 用来计算主从通信的延时
+				//以下时间参考Topic vehicle_gps_position内容
+				//int32 timestamp_time_relative	# timestamp + timestamp_time_relative = Time of the UTC timestamp since system start, (microseconds)
+				//uint64 time_utc_usec		# Timestamp (microseconds, UTC), this is the timestamp which comes from the gps module. It might be unavailable right after cold start, indicated by a value of 0 
+				
+				//发布消息时的utc时间
+				msg.custom_state = gps.time_utc_usec +(msg.timestamp - gps.timestamp);
 
 
-				static int i=0;
-				i++;
-				if(i>1000) i=0;
-
-				msg.acc[0]=i;
-				msg.acc[1]=i;
-				msg.acc[2]=i;
-
+				//把主机的速度也传递过去 用来弥补主从通信的延时问题
+				msg.vel[0]=global.vel_n;
+				msg.vel[1]=global.vel_e;
+				msg.vel[2]=global.vel_d;
 
 				//采用主机global position位置作为从机跟随的依据。
 				//为什么需要乘以，因为根据两个msg消息vehicl_gps_position,vehilce_global_position中的经度纬度乘以了10的-7次方，
@@ -4243,9 +4237,9 @@ protected:
 				// float64 lon	# Longitude, (degrees)
 				// float32 alt	# Altitude AMSL, (meters)
 
-				msg.lat =globalpos.lat*10000000;
-                msg.lon =globalpos.lon*10000000;
-                msg.alt =gpspos.alt*1000;
+				msg.lat =global.lat*10000000;
+                msg.lon =global.lon*10000000;
+                msg.alt =global.alt*1000;
 
 				//可全局搜索Follow_TARGET 一，主机发送位置数据，下面还有streams_list发送列表关于这些mavlink消息的发送不再累述
     		}
