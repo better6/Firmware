@@ -149,27 +149,27 @@ void FollowTarget::on_active()
 
 		// save last known motion topic
 
-		_previous_target_motion = _curr_master_pos;
+		_previous_target_motion = _curr_master;
 
 		//可全局搜索Follow_TARGET 四，目标的位置信息经度纬度高度转存到target_motion中
 
 		orb_copy(ORB_ID(follow_target), _follow_target_sub, &target_motion);
 
-		if (_curr_master_pos.timestamp == 0) {
+		if (_curr_master.timestamp == 0) {
 			//第一次进来，以后称为目标位置指令
-			_curr_master_pos = target_motion;
+			_curr_master = target_motion;
 		}
 
 		//这是一个对目标期望位置的滤波，避免目标的位置太过剧烈。滤波的过程取之前的目标位置指令权重+现在目标位置指令权重，避免目标位置变换剧烈，由此不用担心目标的位置剧烈变换
-		_curr_master_pos.timestamp = target_motion.timestamp;
-		_curr_master_pos.lat = (_curr_master_pos.lat * (double)_param_pos_filter) + target_motion.lat * (double)(
+		_curr_master.timestamp = target_motion.timestamp;
+		_curr_master.lat = (_curr_master.lat * (double)_param_pos_filter) + target_motion.lat * (double)(
 						     1 - _param_pos_filter);
-		_curr_master_pos.lon = (_curr_master_pos.lon * (double)_param_pos_filter) + target_motion.lon * (double)(
+		_curr_master.lon = (_curr_master.lon * (double)_param_pos_filter) + target_motion.lon * (double)(
 						     1 - _param_pos_filter);
 
 	} 
 	//如果好久没收到主机位置信息 则置位所有，重新来过。有此代码在此守候，不用担心万一接收不到主机数据怎么办，如果没接收到此模块标志位无效 大部分程序不运行，从机保持悬停等待主机位置数据
-	else if (((current_time - _curr_master_pos.timestamp) / 1000) > TARGET_TIMEOUT_MS && target_velocity_valid()) {
+	else if (((current_time - _curr_master.timestamp) / 1000) > TARGET_TIMEOUT_MS && target_velocity_valid()) {
 		reset_target_validity();
 	}
 
@@ -185,7 +185,7 @@ void FollowTarget::on_active()
 		//飞机现在的位置映射为NED原点（0，0），再把现在位置指令映射成（x，y），则（x，y）就是现在距离目标的距离
 
 		map_projection_init(&target_ref, _navigator->get_global_position()->lat, _navigator->get_global_position()->lon);
-		map_projection_project(&target_ref, _curr_master_pos.lat, _curr_master_pos.lon, &_slave_master_dis(0),
+		map_projection_project(&target_ref, _curr_master.lat, _curr_master.lon, &_slave_master_dis(0),
 				       &_slave_master_dis(1));
 
 	}
@@ -196,7 +196,7 @@ void FollowTarget::on_active()
 	if (target_velocity_valid() && updated) {//follow_target主题更新两次 可以求目标速度了
 
 		//计算出两次更新的时间间隔，这里用于求速度,也代表主机位置更新的频率
-		dt_ms = ((_curr_master_pos.timestamp - _previous_target_motion.timestamp) / 1000);
+		dt_ms = ((_curr_master.timestamp - _previous_target_motion.timestamp) / 1000);
 
 		// ignore a small dt
 		if (dt_ms > 10.0F) { //100hz
@@ -205,7 +205,7 @@ void FollowTarget::on_active()
 			map_projection_init(&target_ref, _previous_target_motion.lat, _previous_target_motion.lon);
 
 			//计算目标移动的距离
-			map_projection_project(&target_ref, _curr_master_pos.lat, _curr_master_pos.lon,
+			map_projection_project(&target_ref, _curr_master.lat, _curr_master.lon,
 					       &(_target_position_delta(0)), &(_target_position_delta(1)));
 
 			//根据上面目标两次位置的变换 计算出速度_est表示估算出来的目标速度，注意这是水平面的速度 没有z轴速度
@@ -257,8 +257,8 @@ void FollowTarget::on_active()
 
 				_yaw_angle = get_bearing_to_next_waypoint(_navigator->get_global_position()->lat,
 						_navigator->get_global_position()->lon,
-						_curr_master_pos.lat,
-						_curr_master_pos.lon);
+						_curr_master.lat,
+						_curr_master.lon);
 
 				_yaw_rate = wrap_pi((_yaw_angle - _navigator->get_global_position()->yaw) / (dt_ms / 1000.0f));
 
@@ -276,7 +276,7 @@ void FollowTarget::on_active()
 		// get the target position using the calculated offset
 
 		//根据目标的位置指令 以及从机跟随的参数 计算出从机真实应该飞往的目标位置
-		map_projection_init(&target_ref,  _curr_master_pos.lat, _curr_master_pos.lon);
+		map_projection_init(&target_ref,  _curr_master.lat, _curr_master.lon);
 		map_projection_reproject(&target_ref, _target_position_offset(0), _target_position_offset(1),
 					 &slave_target_pos.lat, &slave_target_pos.lon);
 	}
@@ -423,7 +423,7 @@ void FollowTarget::reset_target_validity()
 {
 	_yaw_rate = NAN;
 	_previous_target_motion = {};
-	_curr_master_pos = {};
+	_curr_master = {};
 	_target_updates = 0;
 	_current_vel.zero();
 	_step_vel.zero();
