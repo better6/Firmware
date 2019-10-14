@@ -4214,7 +4214,7 @@ protected:
 
 				_gpspos_sub->update(&gps);
                //这里暂不使用global定位的时间,因为global时间会受其他传感器的融合状态影响
-				 msg.timestamp =hrt_absolute_time();; //+ (global.timestamp - gps.timestamp);  //传递主机GPS数据的UTC时间
+				 msg.timestamp =hrt_absolute_time(); //+ (global.timestamp - gps.timestamp);  //传递主机GPS数据的UTC时间
 
 				//传递主机UTC时间过去 用来计算主从通信的延时
 				//以下时间参考Topic vehicle_gps_position内容

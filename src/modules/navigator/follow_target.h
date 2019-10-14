@@ -121,8 +121,9 @@ private:
 		(ParamFloat<px4::params::NAV_MIN_FT_HT>)	_param_min_alt,
 		(ParamFloat<px4::params::NAV_FT_DST>) _param_tracking_dist,
 		(ParamInt<px4::params::NAV_FT_FS>) _param_tracking_side,
-		(ParamFloat<px4::params::NAV_FT_RS>) _param_tracking_resp,
-		(ParamFloat<px4::params::NAV_FT_VR>) _param_vel_resp,
+		(ParamFloat<px4::params::FT_POS_FLITER>) _param_tracking_resp,
+		(ParamFloat<px4::params::FT_VEL_FILTER>) _param_vel_resp,
+		(ParamFloat<px4::params::FT_COMM_DELAY>) _param_comm_delay,
 		(ParamInt<px4::params::MAV_SYS_ID>) _param_vehicle_id
 	)
 	
@@ -164,6 +165,7 @@ private:
 	float _yaw_rate{0.0f};
 	float _param_pos_filter{0.2f};
 	float _param_vel_filter{0.2f};
+	float _param_delay{0.15f};
 	float _yaw_angle{0.0f};
 
 	// Mavlink defined motion reporting capabilities

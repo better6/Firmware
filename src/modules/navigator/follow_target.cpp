@@ -90,6 +90,8 @@ void FollowTarget::on_activation()
 
 	_param_vel_filter  = math::constrain((float) _param_vel_resp.get(), .1F, 1.0F);
 
+	_param_delay  = math::constrain((float) _param_comm_delay.get(), .1F, 1.0F);
+
 	//跟随方位，这个旋转的矩阵的计算类似绕偏航旋转
 	_param_follow_side = _param_tracking_side.get();
 
@@ -144,12 +146,25 @@ void FollowTarget::on_active()
 	float dt_ms = 0;
 	float delay_s=0;
 
+	static int count=0;//这个用来控制打印输出
+	bool info=false;
+
+
 	orb_check(_follow_target_sub, &updated);
 
 //2. 对主机位置指令进行滤波 得到主机的滤波后的位置_curr_master_pos
 	if (updated) {
 
-		//mavlink_log_info(&_mavlink_log_pub, "wanggen----------"); 
+		count++;
+		if(count==50)  //控制打印输出频率
+		 { 
+			 info=true;   count=0;  
+		}
+		else{
+			info=false; 
+		}
+
+		
 		//编队实现
 		formation_pre();
 
@@ -183,10 +198,14 @@ void FollowTarget::on_active()
 		_master_vel(1) = ( _master_vel(1) * _param_vel_filter ) + target_motion.vy *( 1 - _param_vel_filter);
 		_master_vel(2)  = 0;
 
-		//计算主从通信延时
-		_curr_master.master_utc = target_motion.master_utc;//主机的utc时间
-		hrt_abstime slave_utc_now = _slave_gps.time_utc_usec + hrt_elapsed_time(&_slave_gps.timestamp);
-		delay_s   =  (_curr_master.master_utc - slave_utc_now )* 1e-6f ;
+		//计算的延时有问题:获取不到hrt和utc时间,这个地方可以好好深究下
+		// _curr_master.master_utc = target_motion.master_utc;//主机的utc时间
+		// hrt_abstime slave_utc_now = _slave_gps.time_utc_usec + (hrt_absolute_time()-_slave_gps.timestamp);
+		// delay_s   =  (slave_utc_now - target_motion.master_utc ) * 1e-6f;
+
+		//暂时延时写成参数可调
+		delay_s=_param_delay;
+		
 		
 	} 
 	//如果好久没收到主机位置信息 则置位所有，重新来过。有此代码在此守候，不用担心万一接收不到主机数据怎么办，如果没接收到此模块标志位无效 大部分程序不运行，从机保持悬停等待主机位置数据
@@ -245,9 +264,14 @@ void FollowTarget::on_active()
 
 				_delay_offset = _rot_delay * _master_vel.normalized() * _master_vel.length()* delay_s;
 
-				_target_position_offset=_target_position_offset+_delay_offset;
-				
-				
+				if(info){
+					mavlink_log_info(&_mavlink_log_pub, "延时=%3.2f ,主速=%2.1f ,延距=%3.1f", (double)delay_s*1000,_master_vel.normalized(),_delay_offset.normalized()); 
+					//mavlink_log_info(&_mavlink_log_pub, "估速x=%2.1f y=%2.1f ,获速x=%2.1f y=%2.1f", (double)_est_target_vel(0), (double)_est_target_vel(1),(double)_master_vel(0),(double)_master_vel(1));   
+					mavlink_log_info(&_mavlink_log_pub, "相对主偏=%2.1f,从主距离=%2.1f,两者之和=%2.1f  ",(double)_target_position_offset.length(),(double)_slave_master_dis.length(),(double)(_target_position_offset + _slave_master_dis).length());
+				 }
+
+				_target_position_offset=_target_position_offset +  _delay_offset;
+						
 			}
 	
 			// are we within the target acceptance radius?
@@ -257,8 +281,8 @@ void FollowTarget::on_active()
 
 			//当前飞机距离目标的距离+要和目标保持的参数距离<5米，已经“近身了”,放大范围看看跟速度是什么样的效果？？？现在5米以内才跟速度呢，注意我们的设置的跟随距离6米 是一直在跟随位置 不会进入跟随速度
 			_radius_exited = ((_target_position_offset + _slave_master_dis).length() > (float) TARGET_ACCEPTANCE_RADIUS_M * 1.5f);
-			_radius_entered = ((_target_position_offset + _slave_master_dis).length() < (float) TARGET_ACCEPTANCE_RADIUS_M); 
-			 //mavlink_log_info(&_mavlink_log_pub, "enter=%d,   exit=%d ", _radius_entered,_radius_exited);
+			_radius_entered = ((_target_position_offset + _slave_master_dis).length() < (float) TARGET_ACCEPTANCE_RADIUS_M);
+			//mavlink_log_info(&_mavlink_log_pub, "enter=%d,   exit=%d ", _radius_entered,_radius_exited);
 
 			// to keep the velocity increase/decrease smooth      保持速度的平滑
 			// calculate how many velocity increments/decrements  计算速度增量
@@ -343,7 +367,7 @@ void FollowTarget::on_active()
 				_current_vel = _est_target_vel;
 				
 				update_position_sp(true, true, _yaw_rate);
-
+				
 			} 
 			//跟的过程中接收不到主机位置了，当前位置保持悬停
 			else {
@@ -518,7 +542,9 @@ void FollowTarget::formation_pre()
 	_param_pos_filter = math::constrain((float) _param_tracking_resp.get(), .1F, 1.0F);
 
 	_param_vel_filter  = math::constrain((float) _param_vel_resp.get(), .1F, 1.0F);
-	
+
+	_param_delay  = math::constrain((float) _param_comm_delay.get(), .1F, 1.0F);
+
 
 	//重新读取跟随距离
 	_param_follow_dis = _param_tracking_dist.get() < 3.0F ? 3.0F : _param_tracking_dist.get();

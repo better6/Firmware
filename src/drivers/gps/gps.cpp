@@ -901,6 +901,7 @@ void
 GPS::publish()
 {
 	if (_instance == Instance::Main || _is_gps_main_advertised) {
+		_report_gps_pos.timestamp=hrt_absolute_time();
 		orb_publish_auto(ORB_ID(vehicle_gps_position), &_report_gps_pos_pub, &_report_gps_pos, &_gps_orb_instance,
 				 ORB_PRIO_DEFAULT);
 		_is_gps_main_advertised = true;
