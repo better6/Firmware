@@ -4221,11 +4221,10 @@ protected:
 				//int32 timestamp_time_relative	# timestamp + timestamp_time_relative = Time of the UTC timestamp since system start, (microseconds)
 				//uint64 time_utc_usec		# Timestamp (microseconds, UTC), this is the timestamp which comes from the gps module. It might be unavailable right after cold start, indicated by a value of 0 
 				
-				//发布消息时的utc时间
-				//主机时间怎么算 待讨论
-				//msg.custom_state = gps.time_utc_usec*1000 +(msg.timestamp - gps.timestamp); //前面单位是ms 后面是us
-				//msg.custom_state = gps.time_utc_usec +(msg.timestamp - gps.timestamp); //单位没统一 应该也能用
-				msg.custom_state = gps.time_utc_usec;
+				//utc时间的单位是us不是毫秒，microseconds这是微妙的单词。
+				//林哥固定翼编队使用的是rtk，主机传递是gps数据，这里阻塞等待的是gps数据，所以它这里填充的是gps的utc时间
+				//而我不同 我的用的是global数据，更新快于gps 处理如下：
+				msg.custom_state = gps.time_utc_usec +(msg.timestamp - gps.timestamp); 
 
 
 				//把主机的速度也传递过去 用来弥补主从通信的延时问题
