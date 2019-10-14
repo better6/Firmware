@@ -49,6 +49,7 @@
 #include <px4_module_params.h>
 #include <uORB/topics/follow_target.h>
 #include <uORB/topics/formation_type.h>
+#include <uORB/topics/vehicle_gps_position.h>
 
 #include <systemlib/mavlink_log.h>
 
@@ -121,6 +122,7 @@ private:
 		(ParamFloat<px4::params::NAV_FT_DST>) _param_tracking_dist,
 		(ParamInt<px4::params::NAV_FT_FS>) _param_tracking_side,
 		(ParamFloat<px4::params::NAV_FT_RS>) _param_tracking_resp,
+		(ParamFloat<px4::params::NAV_FT_VR>) _param_vel_resp,
 		(ParamInt<px4::params::MAV_SYS_ID>) _param_vehicle_id
 	)
 	
@@ -132,10 +134,12 @@ private:
 
 	int _follow_target_sub{-1};
 	int _formation_type_sub{-1};
+	int  _slave_gps_sub{-1};
 	orb_advert_t	_mavlink_log_pub{nullptr};
 	float _step_time_in_ms{0.0f};
 
 	formation_type_s _formation{0};
+	vehicle_gps_position_s _slave_gps{0};
 
 	uint8_t _curr_shape{1};
 	uint8_t _mid_shape{1};
@@ -147,8 +151,10 @@ private:
 	matrix::Vector3f _current_vel;
 	matrix::Vector3f _step_vel;
 	matrix::Vector3f _est_target_vel;
+	matrix::Vector3f _master_vel;
 	matrix::Vector3f _slave_master_dis;
 	matrix::Vector3f _target_position_offset;
+	matrix::Vector3f _delay_offset;
 	matrix::Vector3f _target_position_delta;
 	matrix::Vector3f _filtered_target_position_delta;
 
@@ -156,7 +162,8 @@ private:
 	follow_target_s _previous_target_motion{};
 
 	float _yaw_rate{0.0f};
-	float _param_pos_filter{0.0f};
+	float _param_pos_filter{0.2f};
+	float _param_vel_filter{0.2f};
 	float _yaw_angle{0.0f};
 
 	// Mavlink defined motion reporting capabilities
@@ -168,6 +175,7 @@ private:
 	};
 
 	matrix::Dcmf _rot_matrix;
+	matrix::Dcmf _rot_delay;
 
 	void track_target_position();
 	void track_target_velocity();

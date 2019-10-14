@@ -88,6 +88,8 @@ void FollowTarget::on_activation()
 	//对接收到的主机位置进行一阶滤波
 	_param_pos_filter = math::constrain((float) _param_tracking_resp.get(), .1F, 1.0F);
 
+	_param_vel_filter  = math::constrain((float) _param_vel_resp.get(), .1F, 1.0F);
+
 	//跟随方位，这个旋转的矩阵的计算类似绕偏航旋转
 	_param_follow_side = _param_tracking_side.get();
 
@@ -101,12 +103,19 @@ void FollowTarget::on_activation()
 
 	_rot_matrix = (_follow_position_matricies[_param_follow_side]);
 
+	_rot_delay  = (_follow_position_matricies[0]); //延时补偿
+
 	if (_follow_target_sub < 0) {
 		_follow_target_sub = orb_subscribe(ORB_ID(follow_target));
 	}
 
 	if (_formation_type_sub < 0) {
 		_formation_type_sub = orb_subscribe(ORB_ID(formation_type));
+	}
+
+	//订阅gps获取当前utc时间计算延时
+	if (_slave_gps_sub < 0) {
+		_slave_gps_sub = orb_subscribe(ORB_ID(vehicle_gps_position));
 	}
 }
 
@@ -133,6 +142,7 @@ void FollowTarget::on_active()
 	bool _radius_exited = false;
 	bool updated = false;
 	float dt_ms = 0;
+	float delay_s=0;
 
 	orb_check(_follow_target_sub, &updated);
 
@@ -158,6 +168,8 @@ void FollowTarget::on_active()
 		if (_curr_master.timestamp == 0) {
 			//第一次进来，以后称为目标位置指令
 			_curr_master = target_motion;
+			_master_vel(0) = target_motion.vx;
+			_master_vel(1) = target_motion.vy;
 		}
 
 		//这是一个对目标期望位置的滤波，避免目标的位置太过剧烈。滤波的过程取之前的目标位置指令权重+现在目标位置指令权重，避免目标位置变换剧烈，由此不用担心目标的位置剧烈变换
@@ -167,6 +179,15 @@ void FollowTarget::on_active()
 		_curr_master.lon = (_curr_master.lon * (double)_param_pos_filter) + target_motion.lon * (double)(
 						     1 - _param_pos_filter);
 
+		_master_vel(0) = ( _master_vel(0) * _param_vel_filter ) + target_motion.vx *( 1 - _param_vel_filter);
+		_master_vel(1) = ( _master_vel(1) * _param_vel_filter ) + target_motion.vy *( 1 - _param_vel_filter);
+		_master_vel(2)  = 0;
+
+		//计算主从通信延时
+		_curr_master.master_utc = target_motion.master_utc;//主机的utc时间
+		hrt_abstime slave_utc_now = _slave_gps.time_utc_usec + hrt_elapsed_time(&_slave_gps.timestamp);
+		delay_s   =  (_curr_master.master_utc - slave_utc_now )* 1e-6f ;
+		
 	} 
 	//如果好久没收到主机位置信息 则置位所有，重新来过。有此代码在此守候，不用担心万一接收不到主机数据怎么办，如果没接收到此模块标志位无效 大部分程序不运行，从机保持悬停等待主机位置数据
 	else if (((current_time - _curr_master.timestamp) / 1000) > TARGET_TIMEOUT_MS && target_velocity_valid()) {
@@ -209,7 +230,7 @@ void FollowTarget::on_active()
 					       &(_target_position_delta(0)), &(_target_position_delta(1)));
 
 			//根据上面目标两次位置的变换 计算出速度_est表示估算出来的目标速度，注意这是水平面的速度 没有z轴速度
-			_est_target_vel = _target_position_delta / (dt_ms / 1000.0f);
+			_est_target_vel = _target_position_delta / (dt_ms / 1000.0f); //这算的就是NED速度
 
 //4.当主机移动时 从机开始找方位 保持水平距离进行跟随
 
@@ -221,6 +242,12 @@ void FollowTarget::on_active()
 				//如果不是转向 目标在直走，ok啊 从机距离主句还是要有一个offset，即保持距离
 				//这一句主要就是实现从机对目标保持一定距离
 				_target_position_offset = _rot_matrix * _est_target_vel.normalized() * _param_follow_dis;//实测 没有旋转矩阵 无法保持方位？？？？为什么
+
+				_delay_offset = _rot_delay * _master_vel.normalized() * _master_vel.length()* delay_s;
+
+				_target_position_offset=_target_position_offset+_delay_offset;
+				
+				
 			}
 	
 			// are we within the target acceptance radius?
@@ -230,7 +257,7 @@ void FollowTarget::on_active()
 
 			//当前飞机距离目标的距离+要和目标保持的参数距离<5米，已经“近身了”,放大范围看看跟速度是什么样的效果？？？现在5米以内才跟速度呢，注意我们的设置的跟随距离6米 是一直在跟随位置 不会进入跟随速度
 			_radius_exited = ((_target_position_offset + _slave_master_dis).length() > (float) TARGET_ACCEPTANCE_RADIUS_M * 1.5f);
-			_radius_entered = ((_target_position_offset + _slave_master_dis).length() < (float) TARGET_ACCEPTANCE_RADIUS_M);
+			_radius_entered = ((_target_position_offset + _slave_master_dis).length() < (float) TARGET_ACCEPTANCE_RADIUS_M); 
 			 //mavlink_log_info(&_mavlink_log_pub, "enter=%d,   exit=%d ", _radius_entered,_radius_exited);
 
 			// to keep the velocity increase/decrease smooth      保持速度的平滑
@@ -243,7 +270,7 @@ void FollowTarget::on_active()
 			// get any closer or farther from the target
 			_step_vel = (_est_target_vel - _current_vel) + (_target_position_offset + _slave_master_dis) * FF_K;
 			_step_vel /= (dt_ms / 1000.0F * (float) INTERPOLATION_PNTS);
-			_step_time_in_ms = (dt_ms / (float) INTERPOLATION_PNTS);
+			_step_time_in_ms = (dt_ms / (float) INTERPOLATION_PNTS); 
 
 			// if we are less than 1 meter from the target don't worry about trying to yaw
 			// lock the yaw until we are at a distance that makes sense
@@ -445,8 +472,15 @@ void FollowTarget::reset_target_validity()
 void FollowTarget::formation_pre()
 {
 
+	bool updated =false;
+	
+	orb_check(_slave_gps_sub, &updated);
+
+	if(updated){
+		orb_copy(ORB_ID(vehicle_gps_position), _slave_gps_sub, &_slave_gps);
+	}
+
 	//获取地面站发送过来的mavlink消息FORMATION_TYPE -> msg消息formation_type -> 变量_formation
-	bool updated=false;
 	orb_check(_formation_type_sub, &updated);
 
 	if(updated){
@@ -480,6 +514,10 @@ void FollowTarget::formation_pre()
 	// 	}
 
 	// }
+
+	_param_pos_filter = math::constrain((float) _param_tracking_resp.get(), .1F, 1.0F);
+
+	_param_vel_filter  = math::constrain((float) _param_vel_resp.get(), .1F, 1.0F);
 	
 
 	//重新读取跟随距离
