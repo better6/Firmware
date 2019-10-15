@@ -53,7 +53,7 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/follow_target.h>
-#include <lib/ecl/geo/geo.h>
+#include <lib/ecl/geo/geo.h>                //很重要的库，代码中很多地理运算都是基于这个库函数实现的。这里面有很多实用的地理运算
 #include <lib/mathlib/math/Limits.hpp>
 
 #include "navigator.h"
@@ -79,33 +79,35 @@ void FollowTarget::on_inactive()
 	reset_target_validity();
 }
 
-//1. 初始化切换模式时执行一次：参数参数
+//1. 初始化切换模式时执行一次：获取参数
 void FollowTarget::on_activation()
 {
 	//跟随目标的水平距离
 	_param_follow_dis = _param_tracking_dist.get() < 3.0F ? 3.0F : _param_tracking_dist.get();
 
-	//对接收到的主机位置进行一阶滤波
+	//对主机的位置和速度进行绿币的参数,防止主机位置速度骤变
 	_param_pos_filter = math::constrain((float) _param_tracking_resp.get(), .1F, 1.0F);
 
 	_param_vel_filter  = math::constrain((float) _param_vel_resp.get(), .1F, 1.0F);
 
 	_param_delay  = math::constrain((float) _param_comm_delay.get(), .1F, 1.0F);
 
-	//跟随方位，这个旋转的矩阵的计算类似绕偏航旋转
+	//跟随方位参数,计算跟随主机的方位,这是计算的是相对主机的一个点(从机跟随的目标点),背后的原理就是旋转矩阵的计算
 	_param_follow_side = _param_tracking_side.get();
 
-	//飞机的编号
+	_param_vel_dis = _enter_speed.get();
+
+	//获取飞机编号,区分主机从机
 	_vehicle_id=_param_vehicle_id.get();
 
 
-	if ((_param_follow_side > FOLLOW_LEFT) || (_param_follow_side < FOLLOW_FRONT)) {
+	if ((_param_follow_side > 7) || (_param_follow_side < 0)) {
 		_param_follow_side = FOLLOW_BEHIDE;
 	}
 
 	_rot_matrix = (_follow_position_matricies[_param_follow_side]);
 
-	_rot_delay  = (_follow_position_matricies[0]); //延时补偿
+	_rot_delay  = (_follow_position_matricies[0]); //前方
 
 	if (_follow_target_sub < 0) {
 		_follow_target_sub = orb_subscribe(ORB_ID(follow_target));
@@ -134,30 +136,30 @@ void FollowTarget::on_activation()
 //vehicle_global_position 到 mavlink消息FOLLOW_TARGET发送出去 到接收到解析为主题消息follow_target 到封装为pos_sp_triple->cucurrent传递给位置控制 位置控制会将经度纬度转换为local本地坐标系
 //中间涉及本身的位置解算global gps  local   
 
-//强调一句，主机有速度从机才会跟随，跟随的是位置或者速度
+//强调一句，主机有速度从机才会跟随，以主机方向为准,跟随的是位置或者速度
 void FollowTarget::on_active()
 {
 	struct map_projection_reference_s target_ref;
 	follow_target_s slave_target_pos = {};
 	uint64_t current_time = hrt_absolute_time();
-	bool _radius_entered = false;
-	bool _radius_exited = false;
-	bool updated = false;
-	float dt_ms = 0;
-	float delay_s=0;
+	bool	 _radius_entered = false;
+	bool 	 _radius_exited = false;
+	bool 	 updated = false;
+	float	 dt_ms = 0;
+	float 	 delay_s=0;
 
-	static int count=0;//这个用来控制打印输出
+	static int count=0;//控制打印输出扥频率
 	bool info=false;
 
 
 	orb_check(_follow_target_sub, &updated);
 
-//2. 对主机位置指令进行滤波 得到主机的滤波后的位置_curr_master_pos
+//1、 主机位置有更新follow才有效,否则大部分代码不会执行,从机保持悬停
+//	对主机位置速度进行滤波 防止主机的抖动 引起从机的不稳定
 	if (updated) {
 
 		count++;
-		if(count==50)  //控制打印输出频率
-		 { 
+		if(count==50){ //控制打印输出频率
 			 info=true;   count=0;  
 		}
 		else{
@@ -165,38 +167,33 @@ void FollowTarget::on_active()
 		}
 
 		
-		//编队实现
+		//队形实现、参数的实时更新
 		formation_pre();
 
 		follow_target_s target_motion;
 
-		_target_updates++; //follow_target主题有更新 说明主机位置、速度有效
-
-		// save last known motion topic
+		_target_updates++; //根据这个变量：更新的次数，判断主机位置和速度的有效，如果长时间未获取主机位置 此标志位会被重置为0
 
 		_previous_target_motion = _curr_master;
 
-		//可全局搜索Follow_TARGET 四，目标的位置信息经度纬度高度转存到target_motion中
+		//可全局搜索Follow_TARGET 四，主机的位置信息经度纬度高度转存到target_motion中
 
 		orb_copy(ORB_ID(follow_target), _follow_target_sub, &target_motion);
 
-		if (_curr_master.timestamp == 0) {
-			//第一次进来，以后称为目标位置指令
-			_curr_master = target_motion;
-			_master_vel(0) = target_motion.vx;
+		if (_curr_master.timestamp == 0) { //第一次获取主机信息
+			_curr_master = target_motion;  //主机位置
+			_master_vel(0) = target_motion.vx; //主机速度
 			_master_vel(1) = target_motion.vy;
 		}
 
-		//这是一个对目标期望位置的滤波，避免目标的位置太过剧烈。滤波的过程取之前的目标位置指令权重+现在目标位置指令权重，避免目标位置变换剧烈，由此不用担心目标的位置剧烈变换
+		//对主机位置速度进行滤波，避免目标位置变换剧烈影响从机跟随的稳定性
 		_curr_master.timestamp = target_motion.timestamp;
-		_curr_master.lat = (_curr_master.lat * (double)_param_pos_filter) + target_motion.lat * (double)(
-						     1 - _param_pos_filter);
-		_curr_master.lon = (_curr_master.lon * (double)_param_pos_filter) + target_motion.lon * (double)(
-						     1 - _param_pos_filter);
+		_curr_master.lat = (_curr_master.lat * (double)_param_pos_filter) + target_motion.lat * (double)( 1 - _param_pos_filter);
+		_curr_master.lon = (_curr_master.lon * (double)_param_pos_filter) + target_motion.lon * (double)( 1 - _param_pos_filter);
 
 		_master_vel(0) = ( _master_vel(0) * _param_vel_filter ) + target_motion.vx *( 1 - _param_vel_filter);
 		_master_vel(1) = ( _master_vel(1) * _param_vel_filter ) + target_motion.vy *( 1 - _param_vel_filter);
-		_master_vel(2)  = 0;
+		_master_vel(2) = 0;
 
 		//计算的延时有问题:获取不到hrt和utc时间,这个地方可以好好深究下
 		// _curr_master.master_utc = target_motion.master_utc;//主机的utc时间
@@ -213,16 +210,18 @@ void FollowTarget::on_active()
 		reset_target_validity();
 	}
 
-	// update distance to target
-	//更新到目标的距离
+
 
 //2.计算当前从机距离主机的水平距离xy
-	if (target_position_valid()) {//follow_target主题更新一次 目标位置指令有更新，如果一段时间没有收到 140行有置位不会进入这里
+//  注意这两个函数可以直接实现Global坐标系和NED坐标系之间的想换转换。注意是NED坐标系，不是机体坐标系，这里区分清楚 方便后面旋转方位的理解
+	if (target_position_valid()) {//主机位置有更新
 
 		// get distance to target
 		//得到距离目标的距离
 
-		//飞机现在的位置映射为NED原点（0，0），再把现在位置指令映射成（x，y），则（x，y）就是现在距离目标的距离
+		//从机现在的global位置映射为NED原点（0，0），然后把主机的位置映射成NED下的（x，y），则（x，y）不就是现在主从之间的距离嘛
+		//注意再强调一边这三个映射函数，可以直接实现global经度纬度和NED xy的想换转换。
+		//从机需要的航点是经度纬度数据，而NED可以很好的计算的飞机间的相对距离、飞机的速度
 
 		map_projection_init(&target_ref, _navigator->get_global_position()->lat, _navigator->get_global_position()->lon);
 		map_projection_project(&target_ref, _curr_master.lat, _curr_master.lon, &_slave_master_dis(0),
@@ -230,59 +229,70 @@ void FollowTarget::on_active()
 
 	}
 
-	// update target velocity
-	//更新目标的速度 所有的目标是值跟随目标
-//3.计算主机水平速度_est_target_vel，没算z轴速度
+
+
+//3. 更新主机的速度，为什么这里要自己估算速度 而不是直接获取主机的速度，这里的速度不包含z轴 而且是NED坐标系下的vx vy，因为这是给人看的 所以NED坐标系很正常
+
 	if (target_velocity_valid() && updated) {//follow_target主题更新两次 可以求目标速度了
 
-		//计算出两次更新的时间间隔，这里用于求速度,也代表主机位置更新的频率
+		//计算出两次更新的时间间隔，这里用于求速度,也可以求出主机位置更新的频率
 		dt_ms = ((_curr_master.timestamp - _previous_target_motion.timestamp) / 1000);
+		//mavlink_log_info(&_mavlink_log_pub, "主机频率=%2.1f",1/dt_ms);
 
 		// ignore a small dt
-		if (dt_ms > 10.0F) { //100hz
+		if (dt_ms > 10.0F) { //主机更新最快允许100hz
 			// get last gps known reference for target
-			//把上一次的主机位置指令 映射成NED原点（0,0），下面再把现在的位置指令映射出来 就可以得到目标两次位置的变换 即可算出目标的速度
+			//把上一次的主机位置 映射成NED原点（0,0），下面再把现在的位置映射出来 就可以得到目标两次位置的变换 即可算出目标的速度
 			map_projection_init(&target_ref, _previous_target_motion.lat, _previous_target_motion.lon);
 
-			//计算目标移动的距离
-			map_projection_project(&target_ref, _curr_master.lat, _curr_master.lon,
-					       &(_target_position_delta(0)), &(_target_position_delta(1)));
+			//计算目标移动的距离，这里求出是NED坐标系的x y，所以下面求出的速度也是NED下的vx vy
+			map_projection_project(&target_ref, _curr_master.lat, _curr_master.lon, &(_target_position_delta(0)), &(_target_position_delta(1))); 
 
-			//根据上面目标两次位置的变换 计算出速度_est表示估算出来的目标速度，注意这是水平面的速度 没有z轴速度
-			_est_target_vel = _target_position_delta / (dt_ms / 1000.0f); //这算的就是NED速度
+			//估算出来的主机速度，因为位置有滤波 此速度低于主机真实的速度，这是NED下的速度 而且没有z轴
+			_est_target_vel = _target_position_delta / (dt_ms / 1000.0f); 
 
-//4.当主机移动时 从机开始找方位 保持水平距离进行跟随
 
-			// if the target is moving add an offset and rotation
-			//如果目标有速度正在移动，则添加偏移和旋转，这个偏移和旋转指什么，要解决什么问题，前馈目标的位置？？5
-			if (_est_target_vel.length() > 0.8F) { //实测特别有效 主机停下时  从机也会稳定停下，不会乱飘，只有在检测在主机速度时 才会继续跟。从机的最大速度可以大于主机。
-				//如果目标（目标）有移动，则目标在移动过程中 从机也要找到位置进行跟随，从机只是从目标那里获取经度纬度高度数据
-				//目标在转向的时候 并且有速度，这时候从机也会转向保持跟在目标后面，主要是速度原因，而非航向
-				//如果不是转向 目标在直走，ok啊 从机距离主句还是要有一个offset，即保持距离
-				//这一句主要就是实现从机对目标保持一定距离
-				_target_position_offset = _rot_matrix * _est_target_vel.normalized() * _param_follow_dis;//实测 没有旋转矩阵 无法保持方位？？？？为什么
+//4.上面估算出主机的速度，当主机移动时 从机开始找方位 保持水平距离进行跟随
+//  如果主机没有移动，从机会怎么样呢
 
+			//如果主机正在移动， if the target is moving add an offset and rotation
+			if (_est_target_vel.length() > 0.8F) { //实测有效 主机停下时 从机也会稳定停下，不会乱飘，只有在检测在主机速度时 才会继续跟。从机的最大速度可以大于主机。
+				
+				//现在知道主机的经度纬度和NED速度，如何求从机飞往的位置（经度纬度），不需要从机的速度，只给从机期望的位置，速度由从机自行计算。
+				//1.前面的计算 根据主机速度方向（单位向量）旋转一个角度，（可以参考旋转向量的计算过程）
+				//2.然后在旋转后的方向上求长度（主从保持的距离），最终得到NED坐标系主从之间的相对距离（这个距离是个向量 就是NED下x轴y轴的之间的相对距离），方位在主机速度的某个角度。
+				//3.有了NED下的相对距离 就可以根据主机的经度纬度 利用映射函数 求出期望的经度纬度。
+				//这种计算方式可能不是很好理解，对于我们观众是在NED下看相对位置，或者采用林哥固定翼编队的做法：先求机体坐标系下的相对距离，再利用速度方向转换到NED坐标系，最后转到global坐标系下求经度纬度
+				_target_position_offset = _rot_matrix * _est_target_vel.normalized() * _param_follow_dis;//实测 没有旋转矩阵 无法保持方位
+
+				//这是我加的延时补偿，本质上也是弥补到了NED x轴y轴的相对距离上
 				_delay_offset = _rot_delay * _master_vel.normalized() * _master_vel.length()* delay_s;
 
 				if(info){
-					mavlink_log_info(&_mavlink_log_pub, "延时=%3.2f ,主速=%2.1f ,延距=%3.1f", (double)delay_s*1000,_master_vel.normalized(),_delay_offset.normalized()); 
-					//mavlink_log_info(&_mavlink_log_pub, "估速x=%2.1f y=%2.1f ,获速x=%2.1f y=%2.1f", (double)_est_target_vel(0), (double)_est_target_vel(1),(double)_master_vel(0),(double)_master_vel(1));   
-					mavlink_log_info(&_mavlink_log_pub, "相对主偏=%2.1f,从主距离=%2.1f,两者之和=%2.1f  ",(double)_target_position_offset.length(),(double)_slave_master_dis.length(),(double)(_target_position_offset + _slave_master_dis).length());
+					mavlink_log_info(&_mavlink_log_pub, "主偏=%2.1f,从主=%2.1f,之和=%2.1f  ",(double)_target_position_offset.length(),(double)_slave_master_dis.length(),(double)(_target_position_offset + _slave_master_dis).length());
 				 }
 
-				_target_position_offset=_target_position_offset +  _delay_offset;
+				_target_position_offset=_target_position_offset  +  _delay_offset;
 						
+			}
+			else{
+				//如果主机没有移动 静止呢
+				//主机没有动，就不会新定义从机期望的位置，主从的之间的位置也是保持不变，这时候如果跟位置 位置都没有动从机应该保持静止 如果是跟速度从机速度为0 主机也应该静止
+				//就是主机不动的时候 从机也应该保持静止，但是从机会静止在哪个位置呢
+				mavlink_log_info(&_mavlink_log_pub, "主偏=%2.1f,从主=%2.1f,之和=%2.1f  ",(double)_target_position_offset.length(),(double)_slave_master_dis.length(),(double)(_target_position_offset + _slave_master_dis).length());
 			}
 	
 			// are we within the target acceptance radius?
 			// give a buffer to exit/enter the radius to give the velocity controller a chance to catch up
-			//我们是否在目标接受半径范围内？
-			//给出一个缓冲区来退出/输入半径，让速度控制器有机会赶上
 
-			//当前飞机距离目标的距离+要和目标保持的参数距离<5米，已经“近身了”,放大范围看看跟速度是什么样的效果？？？现在5米以内才跟速度呢，注意我们的设置的跟随距离6米 是一直在跟随位置 不会进入跟随速度
-			_radius_exited = ((_target_position_offset + _slave_master_dis).length() > (float) TARGET_ACCEPTANCE_RADIUS_M * 1.5f);
-			_radius_entered = ((_target_position_offset + _slave_master_dis).length() < (float) TARGET_ACCEPTANCE_RADIUS_M);
-			//mavlink_log_info(&_mavlink_log_pub, "enter=%d,   exit=%d ", _radius_entered,_radius_exited);
+			//这是两个向量相加 最后还是一个向量，最后的和表示从机现在的位置到从机期望的位置（向量）
+			//所以下面求向量的长度，即从机距离期望的位置很近的时候，那就是队形上差不多和主机保持一致的时候，如横向一字 就是快到和主机位置水平的时候，为了保持队形 应该和主机的速度保持相对静止
+			//这是有个需要深入思考的问题，这时候应该保持速度一致还是继续跟位置，哪种效果更好，记录日志 进行分析
+			//验证两个问题 其一下面是在求从机距离目标的位置，其二位置跟的更好 还是速度跟的更好，怎么看跟的好不好 地面站的更新有点延迟
+
+			_radius_exited = ((_target_position_offset + _slave_master_dis).length() > (float) _param_vel_dis * 1.5f);
+			_radius_entered = ((_target_position_offset + _slave_master_dis).length() < (float) _param_vel_dis);
+
 
 			// to keep the velocity increase/decrease smooth      保持速度的平滑
 			// calculate how many velocity increments/decrements  计算速度增量
@@ -320,16 +330,26 @@ void FollowTarget::on_active()
 
 
 	}
-//5.根据距离 方位等参数，计算从机跟随应该飞往真正的位置：经度纬度没有高度。
+
+
+//5. 计算从机真实的目标位置，给从机位置指令（或者近距离时也会给速度指令）
+//  根据距离 方位等参数，计算从机跟随应该飞往真正的位置：经度纬度没有高度。
 	
-	if (target_position_valid()) {//如果目标位置有效
+	if (target_position_valid()) {//如果主机位置有效
 
 		// get the target position using the calculated offset
 
-		//根据目标的位置指令 以及从机跟随的参数 计算出从机真实应该飞往的目标位置
+		//根据主机的位置  以及从机跟随的参数 计算出从机真实应该飞往的目标位置
 		map_projection_init(&target_ref,  _curr_master.lat, _curr_master.lon);
 		map_projection_reproject(&target_ref, _target_position_offset(0), _target_position_offset(1),
 					 &slave_target_pos.lat, &slave_target_pos.lon);
+
+		//计算从机到目标位置的距离，判断速度跟随还是位置跟随
+		float dis_target = get_distance_to_next_waypoint((double)_navigator->get_global_position()->lat, (double)_navigator->get_global_position()->lon,
+														 (double)slave_target_pos.lat, (double)slave_target_pos.lon);
+		mavlink_log_info(&_mavlink_log_pub,"dis=%2.1f sum=%2.1f",(double)dis_target,(double)((_target_position_offset + _slave_master_dis).length()));
+		mavlink_log_info(&_mavlink_log_pub,"vel=%d pos=%d",_radius_entered,_radius_exited);
+		
 	}
 
 	// clamp yaw rate smoothing if we are with in
@@ -347,9 +367,10 @@ void FollowTarget::on_active()
 	              //取消航向角速度 ，就是飞机跟随过程中航向一直保持不变，可以看做是无头模式！已经实测，跟随的稳定性极好！无头模式航向保持不变 位置跟随 从机姿态很平稳。
 	/////////////////////////////////////////////////////
 
-	// update state machine
-//7. 进入最后的从机跟随的状态机，从机保持悬停、还是跟随位置、还是跟随速度，跟随的实现需要跟踪到位置控制里。
-	switch (_follow_target_state) { //初始化为SET_WAIT_FOR_TARGET_POSITION 等待主机位置
+
+//7. 进入最后的从机跟随的状态机，从机保持悬停、还是跟随位置、还是跟随速度，
+//   这是只是状态机，跟随的具体代码实现需要跟踪到多旋翼位置控制里去查看。
+	switch (_follow_target_state) { //初始化为SET_WAIT_FOR_TARGET_POSITION爬升一定高度等待主机位置更新，如果一直接收不到主机位置就在此处悬停
 
 	//在目标位置有效时 进入跟随目标位置
 	case TRACK_POSITION: {
@@ -545,6 +566,9 @@ void FollowTarget::formation_pre()
 
 	_param_delay  = math::constrain((float) _param_comm_delay.get(), .1F, 1.0F);
 
+	//进入速度跟随的距离
+	_param_vel_dis = _enter_speed.get();
+
 
 	//重新读取跟随距离
 	_param_follow_dis = _param_tracking_dist.get() < 3.0F ? 3.0F : _param_tracking_dist.get();
@@ -568,22 +592,22 @@ void FollowTarget::formation_pre()
 		else                   {  _param_follow_side=1;  }
 	}
 	else if(_curr_shape==HORIZONTAL){
-		if(_est_target_vel.length() > 0.8F){
-			if(2==_vehicle_id)     {  _param_follow_side=7;  } //2号飞机左侧
-			else if(3==_vehicle_id){  _param_follow_side=6;  } //3号飞机飞右侧
-			else                   {  _param_follow_side=1;  }
-		}
-		else{
+		// if(_est_target_vel.length() > 0.8F){ //这个是从机飞左右前方45度角 用来补偿延时的
+		// 	if(2==_vehicle_id)     {  _param_follow_side=7;  } //2号飞机左侧
+		// 	else if(3==_vehicle_id){  _param_follow_side=6;  } //3号飞机飞右侧
+		// 	else                   {  _param_follow_side=1;  }
+		// }
+		// else{
 			if(2==_vehicle_id)     {  _param_follow_side=5;  } //2号飞机左侧
 			else if(3==_vehicle_id){  _param_follow_side=4;  } //3号飞机飞右侧
 			else                   {  _param_follow_side=1;  }
-		}
+		// }
 
 	}
 	else if(_curr_shape==VERTICAL){
 		
-		if(2==_vehicle_id)     {  _param_follow_side=1; _param_follow_dis=5.0f; } //2号飞机飞后侧 
-		else if(3==_vehicle_id){  _param_follow_side=1; _param_follow_dis=10.0f; } //3号飞机飞后侧
+		if(2==_vehicle_id)     {  _param_follow_side=1; _param_follow_dis=6.0f; } //2号飞机飞后侧 
+		else if(3==_vehicle_id){  _param_follow_side=1; _param_follow_dis=12.0f; } //3号飞机飞后侧
 		else                   {  _param_follow_side=1;  }
 
 	}

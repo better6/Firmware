@@ -104,15 +104,15 @@ private:
 	//cos  -sin 0
 	//sin  cos  0
 	//0     0   1
-	static constexpr float _follow_position_matricies[8][9] = {     //以下这些方位没做,不要随意改动因为代码有用这些顺序 _param_follow_side在用
+	static constexpr float _follow_position_matricies[8][9] = {     //以下这些方位没做,不要随意改动因为代码有用这些顺序 _param_follow_side在用,以主机速度方向为0度 顺时针为正
 		{ 1.0F,  0.0F, 0.0F,  0.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F},    // 0度   前方   follow front
 		{-1.0F,  0.0F, 0.0F,  0.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F},    // 180度 后方   follow behind
 		{-1.0F,  1.0F, 0.0F, -1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F},    //-225度 左后侧  behind*right 
 		{-1.0F, -1.0F, 0.0F,  1.0F, -1.0F, 0.0F, 0.0F, 0.0F, 1.0F},    // 135度 右后侧  left*behind
 		{ 0.0F, -1.0F, 0.0F,  1.0F,  0.0F, 0.0F, 0.0F, 0.0F, 1.0F},    // 90都  右侧   follow right	
-		{ 0.0F,  1.0F, 0.0F, -1.0F,  0.0F, 0.0F, 0.0F, 0.0F, 1.0F},   //-90度  左侧   follow left sides
-		{ 1.0F, -1.0F, 0.0F,  1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}, // 45都  右前方  follow right	
-		{ 1.0F,  1.0F, 0.0F, -1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}  //-45度  左前方  follow left side
+		{ 0.0F,  1.0F, 0.0F, -1.0F,  0.0F, 0.0F, 0.0F, 0.0F, 1.0F},    //-90度  左侧   follow left sides
+		{ 1.0F, -1.0F, 0.0F,  1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F},    // 45都  右前方  
+		{ 1.0F,  1.0F, 0.0F, -1.0F,  1.0F, 0.0F, 0.0F, 0.0F, 1.0F}     //-45度  左前方  
 		                                                            
 
 	};
@@ -124,7 +124,8 @@ private:
 		(ParamFloat<px4::params::FT_POS_FLITER>) _param_tracking_resp,
 		(ParamFloat<px4::params::FT_VEL_FILTER>) _param_vel_resp,
 		(ParamFloat<px4::params::FT_COMM_DELAY>) _param_comm_delay,
-		(ParamInt<px4::params::MAV_SYS_ID>) _param_vehicle_id
+		(ParamInt<px4::params::MAV_SYS_ID>) _param_vehicle_id,
+		(ParamInt<px4::params::FT_ENTER_SPD>) _enter_speed		
 	)
 	
 	FollowTargetState _follow_target_state{SET_WAIT_FOR_TARGET_POSITION};
@@ -132,6 +133,7 @@ private:
 	float _param_follow_alt{8.0f};
 	float _param_follow_dis{OFFSET_M};
 	int _vehicle_id{0};
+	int _param_vel_dis{5};
 
 	int _follow_target_sub{-1};
 	int _formation_type_sub{-1};
