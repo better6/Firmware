@@ -1257,7 +1257,7 @@ Mission::heading_sp_update()
 				if (_param_yawmode.get() == MISSION_YAWMODE_BACK_TO_HOME) {
 					_mission_item.yaw = wrap_pi(yaw + M_PI_F);
 					pos_sp_triplet->current.yaw = _mission_item.yaw;
-
+					pos_sp_triplet->current.yaw = NAN;//限制飞机在mission飞行中航向不发生任何变化，避免因航向的变换，引起飞机姿态的抖动！
 				} else if (_param_yawmode.get() == MISSION_YAWMODE_FRONT_TO_WAYPOINT
 					   && _navigator->get_vroi().mode == vehicle_roi_s::ROI_WPNEXT && !_param_mnt_yaw_ctl.get()) {
 					/* if yaw control for the mount is disabled and we have a valid ROI that points to the next
