@@ -91,7 +91,7 @@ void FollowTarget::on_activation()
 
 	_param_vel_filter  = math::constrain((float) _param_vel_resp.get(), .1F, 1.0F);
 
-	_param_delay  = math::constrain((float) _param_comm_delay.get(), .1F, 1.0F);
+	_param_delay  = math::constrain((float) _param_pos_delay.get(), .1F, 10.0F);
 
 	//跟随方位参数,计算跟随主机的方位,这是计算的是相对主机的一个点(从机跟随的目标点),背后的原理就是旋转矩阵的计算
 	_param_follow_side = _param_tracking_side.get();
@@ -282,6 +282,7 @@ void FollowTarget::on_active()
 
 			_radius_exited = ((_target_position_offset + _slave_master_dis).length() > (float) _param_vel_dis * 1.5f);
 			_radius_entered = ((_target_position_offset + _slave_master_dis).length() < (float) _param_vel_dis);
+			mavlink_log_info(&_mavlink_log_pub, "dis=%2.1f",(double)(_target_position_offset + _slave_master_dis).length());
 
 
 			// to keep the velocity increase/decrease smooth      保持速度的平滑
@@ -553,7 +554,7 @@ void FollowTarget::formation_pre()
 
 	_param_vel_filter  = math::constrain((float) _param_vel_resp.get(), .1F, 1.0F);
 
-	_param_delay  = math::constrain((float) _param_comm_delay.get(), .1F, 1.0F);
+	_param_delay  = math::constrain((float) _param_pos_delay.get(), .1F, 10.0F);
 
 	//进入速度跟随的距离
 	_param_vel_dis = _enter_speed.get();
@@ -573,17 +574,17 @@ void FollowTarget::formation_pre()
 	else{
 
 	}
-
+	
 	if(_curr_shape==TRIANGLE){//实现三角队形
 		
-		if(2==_vehicle_id)     {  _param_follow_side=2;  } //2号飞机左侧
-		else if(3==_vehicle_id){  _param_follow_side=3;  } //3号飞机飞右侧
+		if(2==_vehicle_id)     {  _param_follow_side=2;  } //2号飞机左后侧
+		else if(3==_vehicle_id){  _param_follow_side=3;  } //3号飞机飞右后侧
 		else                   {  _param_follow_side=1;  }
 	}
 	else if(_curr_shape==HORIZONTAL){
 		// if(_est_target_vel.length() > 0.8F){ //这个是从机飞左右前方45度角 用来补偿延时的
-		// 	if(2==_vehicle_id)     {  _param_follow_side=7;  } //2号飞机左侧
-		// 	else if(3==_vehicle_id){  _param_follow_side=6;  } //3号飞机飞右侧
+		// 	if(2==_vehicle_id)     {  _param_follow_side=7;  } //2号飞机左前侧
+		// 	else if(3==_vehicle_id){  _param_follow_side=6;  } //3号飞机飞右前侧
 		// 	else                   {  _param_follow_side=1;  }
 		// }
 		// else{

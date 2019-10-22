@@ -88,7 +88,7 @@ PARAM_DEFINE_INT32(NAV_FT_FS, 1); //从哪个侧面跟随目标 右面、后面�
  * @decimal 2
  * @group Follow target
  */
-PARAM_DEFINE_FLOAT(FT_POS_FLITER, 0.3f); //滤波算法 上次位置指令权重+本次位置指令×（1-权重），对主机发给从机的位置指令进行滤波，避免变化剧烈，因为我们这主机更新频率慢 所以滤波可以不做
+PARAM_DEFINE_FLOAT(FT_POS_FLITER, 0.2f); //滤波算法 上次位置指令权重+本次位置指令×（1-权重），对主机发给从机的位置指令进行滤波，避免变化剧烈，因为我们这主机更新频率慢 所以滤波可以不做
 
 
 /**
@@ -98,24 +98,11 @@ PARAM_DEFINE_FLOAT(FT_POS_FLITER, 0.3f); //滤波算法 上次位置指令权重
  *
  * @unit n/a
  * @min 0.0
- * @max 1.0
+ * @max 10.0
  * @decimal 2
  * @group Follow target
  */
-PARAM_DEFINE_FLOAT(FT_VEL_FILTER, 0.3f); //滤波算法 上次位置指令权重+本次位置指令×（1-权重），对主机发给从机的位置指令进行滤波，避免变化剧烈，因为我们这主机更新频率慢 所以滤波可以不做
-
-/**
- * Dynamic filtering algorithm responsiveness to target movement
- * lower numbers increase the responsiveness to changing long lat
- * but also ignore less noise
- *
- * @unit n/a
- * @min 0.0
- * @max 1.0
- * @decimal 2
- * @group Follow target
- */
-PARAM_DEFINE_FLOAT(FT_COMM_DELAY, 0.15f); //滤波算法 上次位置指令权重+本次位置指令×（1-权重），对主机发给从机的位置指令进行滤波，避免变化剧烈，因为我们这主机更新频率慢 所以滤波可以不做
+PARAM_DEFINE_FLOAT(FT_POS_FF, 1.5f); //滤波算法 上次位置指令权重+本次位置指令×（1-权重），对主机发给从机的位置指令进行滤波，避免变化剧烈，因为我们这主机更新频率慢 所以滤波可以不做
 
 
 /**
@@ -128,3 +115,19 @@ PARAM_DEFINE_FLOAT(FT_COMM_DELAY, 0.15f); //滤波算法 上次位置指令权�
  * @group Follow target
  */
 PARAM_DEFINE_INT32(FT_ENTER_SPD, 5); //从哪个侧面跟随目标 右面、后面、前面、前左，可以测试下效果
+
+/**
+ * Dynamic filtering algorithm responsiveness to target movement
+ * lower numbers increase the responsiveness to changing long lat
+ * but also ignore less noise
+ *
+ * @unit n/a
+ * @min 0.0
+ * @max 1.0
+ * @decimal 2
+ * @group Follow target
+ */
+PARAM_DEFINE_FLOAT(FT_VEL_FILTER, 0.2f); //滤波算法 上次位置指令权重+本次位置指令×（1-权重），对主机发给从机的位置指令进行滤波，避免变化剧烈，因为我们这主机更新频率慢 所以滤波可以不做
+
+
+
