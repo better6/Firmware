@@ -2512,7 +2512,7 @@ void MavlinkReceiver::handle_message_formation_type(mavlink_message_t *msg)
 	} else {
 		orb_publish(ORB_ID(formation_type), _formation_pub, &formation);
 	}
-
+	//已经验证这个消息 地面站点击的时候发挥接收到，不点击不会接收到，而且是地面站一次点击 连续三次发送
 }
 
 //增加的自定义mavlink数据接收

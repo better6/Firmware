@@ -4349,7 +4349,9 @@ protected:
 
 			//订阅全球位置坐标
             vehicle_global_position_s global = {};
-            vehicle_gps_position_s    gps = {};
+            static vehicle_gps_position_s    gps = {};//隐藏的bug,每餐进入到下面if时 gps还没更新，gps这个变量都是初始化的空，所以下面的utc_time怎么能计算出来。和林哥的处理是阻塞等到gps更新
+													  //所以说调试代码不靠猜，猜的到的错误根本就不会写出来了！仿真调试、打印调试、对比测试 比自以为是 更为重要可靠！！！
+													  //定位问题 跟踪问题 排查问题，调试代码不靠猜，调试方法更关键！！！
 
 			if (_globalpos_sub->update(&global)) 
 			{
