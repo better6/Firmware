@@ -4266,6 +4266,149 @@ protected:
 
 
 
+//可全局搜索自定义FOLLOW_ME 二
+//一 是自定义mavlink消息 在common.xml中自定义mavlink消息 重新生成mavlink协议 这里才可以直接使用
+//二 这里先定义实现 以及添加到下面的发送列表中，注意下面的发送列表中FOLLOW_TARGET这个消息已经屏蔽
+//三 就是在mavlink_main.cpp中进行配置发送
+
+class MavlinkStreamFollowMe : public MavlinkStream
+{
+public:
+    const char *get_name() const
+    {
+        return MavlinkStreamFollowMe::get_name_static();
+    }
+
+    static const char *get_name_static()
+    {
+        return "FOLLOW_ME";
+    }
+
+    static uint16_t get_id_static()
+    {
+        return MAVLINK_MSG_ID_FOLLOW_ME;
+    }
+
+    uint16_t get_id()
+    {
+        return get_id_static();
+    }
+
+    static MavlinkStream *new_instance(Mavlink *mavlink)
+    {
+        return new MavlinkStreamFollowMe(mavlink);
+    }
+
+    unsigned get_size()
+    {
+        return MAVLINK_MSG_ID_FOLLOW_ME_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES;
+    }
+
+	bool const_rate()
+	{
+		return true;
+	}
+
+private:
+    MavlinkOrbSubscription *_vehicle_status_sub;
+    MavlinkOrbSubscription *_globalpos_sub;
+    MavlinkOrbSubscription *_gpspos_sub;
+
+
+    uint32_t _sequence;
+
+    /* do not allow top copying this class */
+    MavlinkStreamFollowMe(MavlinkStreamFollowMe &) = delete;
+    MavlinkStreamFollowMe &operator = (const MavlinkStreamFollowMe &) = delete;
+
+protected:
+    explicit MavlinkStreamFollowMe(Mavlink *mavlink) : MavlinkStream(mavlink),
+        _vehicle_status_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_status))),
+        _globalpos_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_global_position))),
+        _gpspos_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_gps_position))),
+        _sequence(0)
+    {}
+
+    bool send(const hrt_abstime t)       
+    {
+        bool updated = false;
+
+		//订阅vehicle_status msg消息，从此消息中可以判断飞机的SYS_ID  status.system_id
+        vehicle_status_s status = {}; 
+        _vehicle_status_sub->update(&status);
+
+		 mavlink_follow_me_t msg = {};
+
+       if(status.system_id==1) {  //ID为1说明是主机,如果是主机发送编队信息	
+			// //验证消息发送成功
+			// msg.lat = 11;
+            // msg.lon =22;
+            // msg.alt =33.0f;
+			// mavlink_msg_follow_me_send_struct(_mavlink->get_channel(), &msg);
+			// return true;
+
+			//订阅全球位置坐标
+            vehicle_global_position_s global = {};
+            vehicle_gps_position_s    gps = {};
+
+			if (_globalpos_sub->update(&global)) 
+			{
+                updated = true;
+
+				_gpspos_sub->update(&gps);
+               //这里暂不使用global定位的时间,因为global时间会受其他传感器的融合状态影响
+				 msg.timestamp =hrt_absolute_time(); //+ (global.timestamp - gps.timestamp);  //传递主机GPS数据的UTC时间
+
+				//传递主机UTC时间过去 用来计算主从通信的延时
+				//以下时间参考Topic vehicle_gps_position内容
+				//int32 timestamp_time_relative	# timestamp + timestamp_time_relative = Time of the UTC timestamp since system start, (microseconds)
+				//uint64 time_utc_usec		# Timestamp (microseconds, UTC), this is the timestamp which comes from the gps module. It might be unavailable right after cold start, indicated by a value of 0 
+				
+				//utc时间的单位是us不是毫秒，microseconds这是微妙的单词。
+				//林哥固定翼编队使用的是rtk，主机传递是gps数据，这里阻塞等待的是gps数据，所以它这里填充的是gps的utc时间
+				//而我不同 我的用的是global数据，更新快于gps 处理如下：
+				msg.utc_time = gps.time_utc_usec +(msg.timestamp - gps.timestamp); //单位us
+
+
+				//把主机的速度也传递过去 用来弥补主从通信的延时问题
+				msg.vel[0]=global.vel_n;
+				msg.vel[1]=global.vel_e;
+				msg.vel[2]=global.vel_d;
+
+				//采用主机global position位置作为从机跟随的依据。
+				//为什么需要乘以，因为根据两个msg消息vehicl_gps_position,vehilce_global_position中的经度纬度乘以了10的-7次方，
+				//两个msg消息中精度维度稳定性差不多，只是乘以的问题。高度数据global_position中高度数据更为准确，应该是气压计融合的原因。
+				// float64 lat	# Latitude, (degrees)
+				// float64 lon	# Longitude, (degrees)
+				// float32 alt	# Altitude AMSL, (meters)
+
+				msg.lat =global.lat*10000000;
+                msg.lon =global.lon*10000000;
+                msg.alt =global.alt;
+
+				//可全局搜索Follow_TARGET 一，主机发送位置数据，下面还有streams_list发送列表关于这些mavlink消息的发送不再累述
+    		}
+
+            if(updated){
+                mavlink_msg_follow_me_send_struct(_mavlink->get_channel(), &msg);
+            }
+
+			return updated;
+        }
+		else{//如果是从机 可以发送其他信息 用于主从之间的通信，但是在mavlink_receiver.cpp里需要写相应的解析程序，目前解析程序里只解析了经度纬度高度
+
+			// msg.lat = 11;
+            // msg.lon =22;
+            // msg.alt =33.0f;
+			// mavlink_msg_follow_me_send_struct(_mavlink->get_channel(), &msg);
+			return true;
+		}
+        
+    }
+};
+
+
+
 
 static const StreamListItem streams_list[] = {
 	StreamListItem(&MavlinkStreamHeartbeat::new_instance, &MavlinkStreamHeartbeat::get_name_static, &MavlinkStreamHeartbeat::get_id_static),
@@ -4319,7 +4462,8 @@ static const StreamListItem streams_list[] = {
 	StreamListItem(&MavlinkStreamHighLatency2::new_instance, &MavlinkStreamHighLatency2::get_name_static, &MavlinkStreamHighLatency2::get_id_static),
 	StreamListItem(&MavlinkStreamGroundTruth::new_instance, &MavlinkStreamGroundTruth::get_name_static, &MavlinkStreamGroundTruth::get_id_static),
 	StreamListItem(&MavlinkStreamPing::new_instance, &MavlinkStreamPing::get_name_static, &MavlinkStreamPing::get_id_static),
-	StreamListItem(&MavlinkStreamFollowTarget::new_instance, &MavlinkStreamFollowTarget::get_name_static, &MavlinkStreamFollowTarget::get_id_static)
+//	StreamListItem(&MavlinkStreamFollowTarget::new_instance, &MavlinkStreamFollowTarget::get_name_static, &MavlinkStreamFollowTarget::get_id_static),
+	StreamListItem(&MavlinkStreamFollowMe::new_instance, &MavlinkStreamFollowMe::get_name_static, &MavlinkStreamFollowMe::get_id_static)
 };
 
 const char *get_stream_name(const uint16_t msg_id)

@@ -2064,8 +2064,12 @@ Mavlink::task_main(int argc, char *argv[])
     case MAVLINK_MODE_ONBOARD:  //使用companion时会进入这一模式,设置第二数传进入这个模式
 
         //configure_stream("PING", 1.0f);
-		configure_stream("FOLLOW_TARGET", 100.0f);//这个数据太多了 换
+		//configure_stream("FOLLOW_TARGET", 100.0f);
 		//mavlink_log_info(&_mavlink_log_pub,"telem2配置成follow");
+
+		//可全局搜索自定义FOLLOW_ME 三
+		configure_stream("FOLLOW_ME", 100.0f);//FOLLOW_TARGET冗余的内容太多 好多字节没有使用 这里使用自定义的mavlink消息进行主从通信
+
         break;
 
 	case MAVLINK_MODE_OSD:
