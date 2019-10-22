@@ -302,6 +302,11 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 		//接受mavlink消息 FOLLOW_TARGET，并进行跟随。
 		handle_message_follow_target(msg);
 		break;
+	
+	//可全局搜索自定义FOLLOW_ME 四，从机接收主机发送过来的跟随位置信息
+	case MAVLINK_MSG_ID_FOLLOW_ME:
+        handle_message_follow_me(msg);
+        break;	
 
 	case MAVLINK_MSG_ID_LANDING_TARGET:
 		handle_message_landing_target(msg);
@@ -363,9 +368,9 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
         break;		
 
 	//这是主机发给从机的跟随目标位置，相比Follow_target数据有精简
-	case MAVLINK_MSG_ID_FOLLOW_ME:
-        handle_message_follow_me(msg);
-        break;		
+	// case MAVLINK_MSG_ID_FOLLOW_ME:
+    //     handle_message_follow_me(msg);
+    //     break;		
 
 	//增加用于后期通信扩展的
 	case MAVLINK_MSG_ID_LETTER:
@@ -2106,24 +2111,24 @@ MavlinkReceiver::handle_message_hil_gps(mavlink_message_t *msg)
 //可全局搜索Follow_TARGET 三，把主机位置数据包装到ORB_ID(follow_target)主题信息中进行传递
 void MavlinkReceiver::handle_message_follow_target(mavlink_message_t *msg)
 {
-	mavlink_follow_target_t follow_target_msg;
-	follow_target_s follow_target_topic = {};
+	mavlink_follow_target_t _follow_msg;
+	follow_target_s _topic = {};
 
-	mavlink_msg_follow_target_decode(msg, &follow_target_msg);
+	mavlink_msg_follow_target_decode(msg, &_follow_msg);
 
-	follow_target_topic.timestamp = hrt_absolute_time();
+	_topic.timestamp = hrt_absolute_time();
 
 	//这里对接收到的经度纬度数据乘以10的-7次方，高度数据不变，就以此为准。
 	//发送的时候乘以了10的7次方，这里再缩放回去，原因没细究
-	follow_target_topic.lat = follow_target_msg.lat * 1e-7;
-	follow_target_topic.lon = follow_target_msg.lon * 1e-7;
-	follow_target_topic.alt = follow_target_msg.alt;
+	_topic.lat = _follow_msg.lat * 1e-7;
+	_topic.lon = _follow_msg.lon * 1e-7;
+	_topic.alt = _follow_msg.alt;
 
-	follow_target_topic.vx  = follow_target_msg.vel[0]; //注意这是来源与mavlink_message.cpp主机发送过来的速度数据，数据源vehicle_global_position 是NED速度。
-	follow_target_topic.vy  = follow_target_msg.vel[1];
-	follow_target_topic.vz  = follow_target_msg.vel[2];
+	_topic.vx  = _follow_msg.vel[0]; //注意这是来源与mavlink_message.cpp主机发送过来的速度数据，数据源vehicle_global_position 是NED速度。
+	_topic.vy  = _follow_msg.vel[1];
+	_topic.vz  = _follow_msg.vel[2];
 
-	follow_target_topic.master_utc = follow_target_msg.custom_state;
+	_topic.master_utc = _follow_msg.custom_state;
 
 	//如果切换到follow_target模式，外部只需要通过FOLLOW_TARGET消息发送经度纬度高度数据即可。
 	//这个消息里还有很多其他数据还没使用。
@@ -2131,10 +2136,10 @@ void MavlinkReceiver::handle_message_follow_target(mavlink_message_t *msg)
 	//在follow_target.cpp中再次封装成pos_sp_triple->cyrrent传送给位置控制进行实现，同时传给位置控制的还有航点类型SETPOINT_TYPE_FOLLOW_TARGET，后续就是位置控制实现跟随了
 
 	if (_follow_target_pub == nullptr) {
-		_follow_target_pub = orb_advertise(ORB_ID(follow_target), &follow_target_topic);
+		_follow_target_pub = orb_advertise(ORB_ID(follow_target), &_topic);
 
 	} else {
-		orb_publish(ORB_ID(follow_target), _follow_target_pub, &follow_target_topic);
+		orb_publish(ORB_ID(follow_target), _follow_target_pub, &_topic);
 	}
 }
 
@@ -2519,6 +2524,37 @@ void MavlinkReceiver::handle_message_fault_command(mavlink_message_t *msg)
 //增加的自定义mavlink数据接收
 void MavlinkReceiver::handle_message_follow_me(mavlink_message_t *msg)
 {
+
+	mavlink_follow_me_t _follow_msg;
+	follow_target_s _topic = {};
+
+	mavlink_msg_follow_me_decode(msg, &_follow_msg);
+
+	_topic.timestamp = hrt_absolute_time();
+
+	//这里对接收到的经度纬度数据乘以10的-7次方，高度数据不变，就以此为准。
+	//发送的时候乘以了10的7次方，这里再缩放回去，原因没细究
+	_topic.lat = _follow_msg.lat * 1e-7;
+	_topic.lon = _follow_msg.lon * 1e-7;
+	_topic.alt = _follow_msg.alt;
+
+	_topic.vx  = _follow_msg.vel[0]; //注意这是来源与mavlink_message.cpp主机发送过来的速度数据，数据源vehicle_global_position 是NED速度。
+	_topic.vy  = _follow_msg.vel[1];
+	_topic.vz  = _follow_msg.vel[2];
+
+	_topic.master_utc = _follow_msg.utc_time;
+
+	//如果切换到follow_target模式，外部只需要通过FOLLOW_TARGET消息发送经度纬度高度数据即可。
+	//这个消息里还有很多其他数据还没使用。
+	//ORB_ID(follow_target)谁在用，只有一处在用follow_target.cpp在用，就是follow_target飞行模式在用。
+	//在follow_target.cpp中再次封装成pos_sp_triple->cyrrent传送给位置控制进行实现，同时传给位置控制的还有航点类型SETPOINT_TYPE_FOLLOW_TARGET，后续就是位置控制实现跟随了
+
+	if (_follow_target_pub == nullptr) {
+		_follow_target_pub = orb_advertise(ORB_ID(follow_target), &_topic);
+
+	} else {
+		orb_publish(ORB_ID(follow_target), _follow_target_pub, &_topic);
+	}
 
 }
 
