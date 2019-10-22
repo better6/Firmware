@@ -149,9 +149,6 @@ void FollowTarget::on_active()
 	float	 dt_ms = 0;
 	float 	 delay_s=0;
 
-	static int count=0;//控制打印输出扥频率
-	bool info=false;
-
 
 	orb_check(_follow_target_sub, &updated);
 
@@ -159,15 +156,7 @@ void FollowTarget::on_active()
 //	对主机位置速度进行滤波 防止主机的抖动 引起从机的不稳定
 	if (updated) {
 
-		count++;
-		if(count==50){ //控制打印输出频率
-			 info=true;   count=0;  
-		}
-		else{
-			info=false; 
-		}
 
-		
 		//队形实现、参数的实时更新
 		formation_pre();
 
@@ -192,6 +181,7 @@ void FollowTarget::on_active()
 		_curr_master.lat = (_curr_master.lat * (double)_param_pos_filter) + target_motion.lat * (double)( 1 - _param_pos_filter);
 		_curr_master.lon = (_curr_master.lon * (double)_param_pos_filter) + target_motion.lon * (double)( 1 - _param_pos_filter);
 
+		//对主机速度进行滤波
 		_master_vel(0) = ( _master_vel(0) * _param_vel_filter ) + target_motion.vx *( 1 - _param_vel_filter);
 		_master_vel(1) = ( _master_vel(1) * _param_vel_filter ) + target_motion.vy *( 1 - _param_vel_filter);
 		_master_vel(2) = 0;
@@ -252,7 +242,8 @@ void FollowTarget::on_active()
 			//估算出来的主机速度，因为位置有滤波 此速度低于主机真实的速度，这是NED下的速度 而且没有z轴
 			_est_target_vel = _target_position_delta / (dt_ms / 1000.0f); 
 
-
+			//_est_target_vel = _master_vel;//不用估算主机的速度 直接使用主机传递过来的速度，但是目前来看主机更新的频率个很低 会不会这里有影响，
+			
 //4.上面估算出主机的速度，当主机移动时 从机开始找方位 保持水平距离进行跟随
 //  如果主机没有移动，从机会怎么样呢
 
@@ -267,12 +258,10 @@ void FollowTarget::on_active()
 				_target_position_offset = _rot_matrix * _est_target_vel.normalized() * _param_follow_dis;//实测 没有旋转矩阵 无法保持方位
 
 				//这是我加的延时补偿，本质上也是弥补到了NED x轴y轴的相对距离上
+				//已经实测 这种主机前方位置的补偿有效
 				_delay_offset = _rot_delay * _master_vel.normalized() * _master_vel.length()* delay_s;
 
-				if(info){
-					mavlink_log_info(&_mavlink_log_pub, "主偏=%2.1f,从主=%2.1f,之和=%2.1f  ",(double)_target_position_offset.length(),(double)_slave_master_dis.length(),(double)(_target_position_offset + _slave_master_dis).length());
-				 }
-
+				//已经实测 这种主机前方位置的补偿有效
 				_target_position_offset=_target_position_offset  +  _delay_offset;
 						
 			}
@@ -280,16 +269,16 @@ void FollowTarget::on_active()
 				//如果主机没有移动 静止呢
 				//主机没有动，就不会新定义从机期望的位置，主从的之间的位置也是保持不变，这时候如果跟位置 位置都没有动从机应该保持静止 如果是跟速度从机速度为0 主机也应该静止
 				//就是主机不动的时候 从机也应该保持静止，但是从机会静止在哪个位置呢
-				mavlink_log_info(&_mavlink_log_pub, "主偏=%2.1f,从主=%2.1f,之和=%2.1f  ",(double)_target_position_offset.length(),(double)_slave_master_dis.length(),(double)(_target_position_offset + _slave_master_dis).length());
+				mavlink_log_info(&_mavlink_log_pub, "主静");
 			}
 	
 			// are we within the target acceptance radius?
 			// give a buffer to exit/enter the radius to give the velocity controller a chance to catch up
 
-			//这是两个向量相加 最后还是一个向量，最后的和表示从机现在的位置到从机期望的位置（向量）
+			//这是两个向量相加 最后还是一个向量，最后的和表示从机现在的位置 到从机期望的位置（向量）,已经实测验证。
 			//所以下面求向量的长度，即从机距离期望的位置很近的时候，那就是队形上差不多和主机保持一致的时候，如横向一字 就是快到和主机位置水平的时候，为了保持队形 应该和主机的速度保持相对静止
-			//这是有个需要深入思考的问题，这时候应该保持速度一致还是继续跟位置，哪种效果更好，记录日志 进行分析
-			//验证两个问题 其一下面是在求从机距离目标的位置，其二位置跟的更好 还是速度跟的更好，怎么看跟的好不好 地面站的更新有点延迟
+			//远距离跟位置 近距离跟速度 这种方式测试跟随效果不错跟随稳定，就是主机速度大时 主从位置有落差。
+
 
 			_radius_exited = ((_target_position_offset + _slave_master_dis).length() > (float) _param_vel_dis * 1.5f);
 			_radius_entered = ((_target_position_offset + _slave_master_dis).length() < (float) _param_vel_dis);
@@ -345,11 +334,9 @@ void FollowTarget::on_active()
 		map_projection_reproject(&target_ref, _target_position_offset(0), _target_position_offset(1),
 					 &slave_target_pos.lat, &slave_target_pos.lon);
 
-		//计算从机到目标位置的距离，判断速度跟随还是位置跟随
-		float dis_target = get_distance_to_next_waypoint((double)_navigator->get_global_position()->lat, (double)_navigator->get_global_position()->lon,
-														 (double)slave_target_pos.lat, (double)slave_target_pos.lon);
-		mavlink_log_info(&_mavlink_log_pub,"dis=%2.1f sum=%2.1f",(double)dis_target,(double)((_target_position_offset + _slave_master_dis).length()));
-		mavlink_log_info(&_mavlink_log_pub,"vel=%d pos=%d",_radius_entered,_radius_exited);
+		//计算从机到目标位置的距离
+		// float dis_target = get_distance_to_next_waypoint((double)_navigator->get_global_position()->lat, (double)_navigator->get_global_position()->lon,
+		// 												 (double)slave_target_pos.lat, (double)slave_target_pos.lon);
 		
 	}
 
