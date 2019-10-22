@@ -2068,6 +2068,7 @@ Mavlink::task_main(int argc, char *argv[])
 		//mavlink_log_info(&_mavlink_log_pub,"telem2配置成follow");
 
 		//可全局搜索自定义FOLLOW_ME 三
+		
 		configure_stream("FOLLOW_ME", 100.0f);//FOLLOW_TARGET冗余的内容太多 好多字节没有使用 这里使用自定义的mavlink消息进行主从通信
 
         break;
