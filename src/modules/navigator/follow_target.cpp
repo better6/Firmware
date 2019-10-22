@@ -240,9 +240,9 @@ void FollowTarget::on_active()
 			map_projection_project(&target_ref, _curr_master.lat, _curr_master.lon, &(_target_position_delta(0)), &(_target_position_delta(1))); 
 
 			//估算出来的主机速度，因为位置有滤波 此速度低于主机真实的速度，这是NED下的速度 而且没有z轴
-			_est_target_vel = _target_position_delta / (dt_ms / 1000.0f); 
+			//_est_target_vel = _target_position_delta / (dt_ms / 1000.0f); 
 
-			//_est_target_vel = _master_vel;//不用估算主机的速度 直接使用主机传递过来的速度，但是目前来看主机更新的频率个很低 会不会这里有影响，
+			_est_target_vel = _master_vel;//不用估算主机的速度 直接使用主机传递过来的速度，但是目前来看主机更新的频率个很低 会不会这里有影响，
 			
 //4.上面估算出主机的速度，当主机移动时 从机开始找方位 保持水平距离进行跟随
 //  如果主机没有移动，从机会怎么样呢
@@ -377,6 +377,7 @@ void FollowTarget::on_active()
 				_current_vel = _est_target_vel;
 				
 				update_position_sp(true, true, _yaw_rate);
+				mavlink_log_info(&_mavlink_log_pub, "POS");
 				
 			} 
 			//跟的过程中接收不到主机位置了，当前位置保持悬停
@@ -405,6 +406,7 @@ void FollowTarget::on_active()
 				set_follow_target_item(&_mission_item, _param_follow_alt, slave_target_pos, _yaw_angle);
 				//使用速度 位置无效
 				update_position_sp(true, false, _yaw_rate);
+				mavlink_log_info(&_mavlink_log_pub, "VEL");
 
 			} 
 			//接收不到主机位置数据 保持悬停重新进入状态机
