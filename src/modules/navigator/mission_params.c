@@ -104,7 +104,7 @@ PARAM_DEFINE_FLOAT(MIS_DIST_1WP, 500);//航线保护 要求第一个航点距离
  * @increment 100
  * @group Mission
  */
-PARAM_DEFINE_FLOAT(MIS_DIST_WPS, 500); //航线保护功能 两个航点之间的最大距离
+PARAM_DEFINE_FLOAT(MIS_DIST_WPS, 1000); //航线保护功能 任意连个航点之间的最大距离，此参数限制了飞机mission的最远距离，现在给放大一些
 
 /**
  * Altitude setpoint mode
