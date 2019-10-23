@@ -2023,21 +2023,22 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("ALTITUDE", 2.0f);//高度数据 
 		configure_stream("ATTITUDE", 3.0f);//姿态数据 降频20->5
 		configure_stream("ATTITUDE_TARGET", 1.0f);
-		configure_stream("ESTIMATOR_STATUS", 0.5f);
-		configure_stream("EXTENDED_SYS_STATE", 1.0f);
-		configure_stream("GLOBAL_POSITION_INT", 5.0f);
+		configure_stream("ESTIMATOR_STATUS", 0.2f);
+		configure_stream("EXTENDED_SYS_STATE", 0.5f);//落地状态
+		configure_stream("GLOBAL_POSITION_INT", 8.0f);//全球坐标系经度纬度高度、速度
 		configure_stream("GPS_RAW_INT", 2.0f);
 		configure_stream("HIGHRES_IMU", 2.0f);
 		configure_stream("HOME_POSITION", 0.5f);
 		configure_stream("LOCAL_POSITION_NED", 1.0f);		
 		configure_stream("PING", 0.1f);
 		configure_stream("POSITION_TARGET_LOCAL_NED", 1.0f);
-		configure_stream("POSITION_TARGET_GLOBAL_INT", 1.0f);
-		configure_stream("RC_CHANNELS", 2.0f);
-		configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);
-		configure_stream("SYS_STATUS", 1.0f);
-		configure_stream("DISTANCE_SENSOR", 0.5f);
+		configure_stream("RC_CHANNELS", 1.0f);
+		configure_stream("SYS_STATUS", 0.2f);//电量
+		configure_stream("DISTANCE_SENSOR", 0.5f);//距离传感器
 		configure_stream("VFR_HUD", 2.0f); //这是速度数据不可屏蔽
+
+		//configure_stream("POSITION_TARGET_GLOBAL_INT", 1.0f);//期望的全球坐标
+		//configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);//pwm输出
 
 
 		//目前数据精简不需要的数据
