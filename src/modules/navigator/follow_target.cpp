@@ -160,7 +160,7 @@ void FollowTarget::on_active()
 		//队形实现、参数的实时更新
 		formation_pre();
 
-		follow_target_s target_motion;
+		follow_target_s get_master;
 
 		_target_updates++; //根据这个变量：更新的次数，判断主机位置和速度的有效，如果长时间未获取主机位置 此标志位会被重置为0
 
@@ -168,28 +168,28 @@ void FollowTarget::on_active()
 
 		//可全局搜索Follow_TARGET 四，主机的位置信息经度纬度高度转存到target_motion中
 
-		orb_copy(ORB_ID(follow_target), _follow_target_sub, &target_motion);
+		orb_copy(ORB_ID(follow_target), _follow_target_sub, &get_master);
 
 		if (_curr_master.timestamp == 0) { //第一次获取主机信息
-			_curr_master = target_motion;  //主机位置
-			_master_vel(0) = target_motion.vx; //主机速度
-			_master_vel(1) = target_motion.vy;
+			_curr_master = get_master;  //主机位置
+			_master_vel(0) = get_master.vx; //主机速度
+			_master_vel(1) = get_master.vy;
 		}
 
 		//对主机位置速度进行滤波，避免目标位置变换剧烈影响从机跟随的稳定性
-		_curr_master.timestamp = target_motion.timestamp;
-		_curr_master.lat = (_curr_master.lat * (double)_param_pos_filter) + target_motion.lat * (double)( 1 - _param_pos_filter);
-		_curr_master.lon = (_curr_master.lon * (double)_param_pos_filter) + target_motion.lon * (double)( 1 - _param_pos_filter);
+		_curr_master.timestamp = get_master.timestamp;
+		_curr_master.lat = (_curr_master.lat * (double)_param_pos_filter) + get_master.lat * (double)( 1 - _param_pos_filter);
+		_curr_master.lon = (_curr_master.lon * (double)_param_pos_filter) + get_master.lon * (double)( 1 - _param_pos_filter);
 
 		//对主机速度进行滤波
-		_master_vel(0) = ( _master_vel(0) * _param_vel_filter ) + target_motion.vx *( 1 - _param_vel_filter);
-		_master_vel(1) = ( _master_vel(1) * _param_vel_filter ) + target_motion.vy *( 1 - _param_vel_filter);
+		_master_vel(0) = ( _master_vel(0) * _param_vel_filter ) + get_master.vx *( 1 - _param_vel_filter);
+		_master_vel(1) = ( _master_vel(1) * _param_vel_filter ) + get_master.vy *( 1 - _param_vel_filter);
 		_master_vel(2) = 0;
 
 		//计算的延时有问题:获取不到hrt和utc时间,这个地方可以好好深究下
-		// _curr_master.master_utc = target_motion.master_utc;//主机的utc时间
+		// _curr_master.master_utc = get_master.master_utc;//主机的utc时间
 		// hrt_abstime slave_utc_now = _slave_gps.time_utc_usec + (hrt_absolute_time()-_slave_gps.timestamp);
-		// delay_s   =  (slave_utc_now - target_motion.master_utc ) * 1e-6f;
+		// delay_s   =  (slave_utc_now - get_master.master_utc ) * 1e-6f;
 
 		//暂时延时写成参数可调
 		delay_s=_param_delay;
