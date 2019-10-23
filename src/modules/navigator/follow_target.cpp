@@ -576,7 +576,11 @@ void FollowTarget::formation_pre()
 	else{
 
 	}
-	
+
+	// matrix::Vector3f z1(1, 0,0);
+	// matrix::Vector3f z2(0, 1,0);
+	// float cos=z1.normalized() * z2.normalized();//归一化两个单位向量，求两个向量之间的cos，根据cos可以判断两次速度变换的方向 进而决定跟随方式。
+
 	if(_curr_shape==TRIANGLE){//实现三角队形
 		
 		if(2==_vehicle_id)     {  _param_follow_side=2;  } //2号飞机左后侧
