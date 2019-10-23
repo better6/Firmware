@@ -155,6 +155,7 @@ private:
 	matrix::Vector3f _step_vel;
 	matrix::Vector3f _est_target_vel;
 	matrix::Vector3f _master_vel;
+	matrix::Vector3f _vel_pre;
 	matrix::Vector3f _slave_master_dis;
 	matrix::Vector3f _target_position_offset;
 	matrix::Vector3f _delay_offset;

@@ -156,10 +156,6 @@ void FollowTarget::on_active()
 //	对主机位置速度进行滤波 防止主机的抖动 引起从机的不稳定
 	if (updated) {
 
-
-		//队形实现、参数的实时更新
-		formation_pre();
-
 		follow_target_s get_master;
 
 		_target_updates++; //根据这个变量：更新的次数，判断主机位置和速度的有效，如果长时间未获取主机位置 此标志位会被重置为0
@@ -174,6 +170,7 @@ void FollowTarget::on_active()
 			_curr_master = get_master;  //主机位置
 			_master_vel(0) = get_master.vx; //主机速度
 			_master_vel(1) = get_master.vy;
+			_vel_pre       = _master_vel;
 		}
 
 		//对主机位置速度进行滤波，避免目标位置变换剧烈影响从机跟随的稳定性
@@ -185,6 +182,15 @@ void FollowTarget::on_active()
 		_master_vel(0) = ( _master_vel(0) * _param_vel_filter ) + get_master.vx *( 1 - _param_vel_filter);
 		_master_vel(1) = ( _master_vel(1) * _param_vel_filter ) + get_master.vy *( 1 - _param_vel_filter);
 		_master_vel(2) = 0;
+
+
+
+		//预处理：取所有参数、包括队形参数、主机速度方向改变从机走位的判断
+		formation_pre();
+		//记录主机上一次的速度。
+		_vel_pre=_master_vel;
+
+
 
 		//计算的延时有问题:获取不到hrt和utc时间,这个地方可以好好深究下
 		// _curr_master.master_utc = get_master.master_utc;//主机的utc时间
@@ -530,27 +536,6 @@ void FollowTarget::formation_pre()
 
 	}
 
-	// if(_curr_shape!=_mav_shape){ //如果现在的队形不等于期望的队形
-	// 	switch(_mav_shape){
-	// 		case TRIANGLE://期望三角队形
-	// 			_curr_shape=TRIANGLE;
-	// 			break;
-			
-	// 		case HORIZONTAL://想切横向一字，直接切
-	// 			_curr_shape=HORIZONTAL;
-	// 			break;
-
-	// 		case VERTICAL://想切横纵向一字
-	// 			_curr_shape=VERTICAL;
-	// 			break;
-
-	// 		default:
-	// 			_curr_shape = TRIANGLE;
-	// 			break;
-
-	// 	}
-
-	// }
 
 	_param_pos_filter = math::constrain((float) _param_tracking_resp.get(), .1F, 1.0F);
 
@@ -561,9 +546,9 @@ void FollowTarget::formation_pre()
 	//进入速度跟随的距离
 	_param_vel_dis = _enter_speed.get();
 
-
 	//重新读取跟随距离
 	_param_follow_dis = _param_tracking_dist.get() < 3.0F ? 3.0F : _param_tracking_dist.get();
+
 	//重新读取高度
 	_param_follow_alt = _param_min_alt.get();
 
@@ -577,9 +562,17 @@ void FollowTarget::formation_pre()
 
 	}
 
-	// matrix::Vector3f z1(1, 0,0);
-	// matrix::Vector3f z2(0, 1,0);
-	// float cos=z1.normalized() * z2.normalized();//归一化两个单位向量，求两个向量之间的cos，根据cos可以判断两次速度变换的方向 进而决定跟随方式。
+	//cos120 = cos-120 = -0.5
+	//cos90  = cos-90  = 0
+	//从机跟随的是主机的速度方向 根据主机前后两次的速度方向，调整从机跟随的方位，主要目的是防止主机方向变化太大时 从机交叉互换位置有相撞的可能性。
+	float cos = _vel_pre.normalized() * _master_vel.normalized();
+	if(cos < -0.5f){ //主机速度方向改变很大，超出+—120度了，从机交叉有相撞风险,那么不交叉走位了
+		if(_vehicle_id==2)      { _vehicle_id=3; }
+		else if(_vehicle_id==3) { _vehicle_id=2; }
+		else                    {                }
+	}
+	//其他 主机小角度转弯 从机正常旋转跟随走位。
+
 
 	if(_curr_shape==TRIANGLE){//实现三角队形
 		
