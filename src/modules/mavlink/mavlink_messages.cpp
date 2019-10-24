@@ -4371,6 +4371,14 @@ protected:
 				//而我不同 我的用的是global数据，更新快于gps 处理如下：
 				msg.utc_time = gps.time_utc_usec +(msg.timestamp - gps.timestamp); //单位us
 
+				
+				float delay=0; //需要定义成static吗
+				param_get(param_find("FT_SLAVE_DELAY"), &delay);
+				//主机参数FT_SLAVE_DELAY已经打包到FOLLOW_ME如下内容 通过telem2主从通信传递给从机使用
+				//注意参数FT_SLAVE_DELAY范围0-10s，这里uint8_t最多0-100  不得超过254
+				msg.info[0] = (uint8_t)(delay*10);//因为FOLLOW_ME内容不完全这里借助一个整形变量进行传递
+				//warnx("delay=%d",msg.info[0]);
+
 
 				//把主机的速度也传递过去 用来弥补主从通信的延时问题
 				msg.vel[0]=global.vel_n;

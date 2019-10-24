@@ -130,4 +130,16 @@ PARAM_DEFINE_INT32(FT_ENTER_SPD, 5); //从哪个侧面跟随目标 右面、后�
 PARAM_DEFINE_FLOAT(FT_VEL_FILTER, 0.2f); //滤波算法 上次位置指令权重+本次位置指令×（1-权重），对主机发给从机的位置指令进行滤波，避免变化剧烈，因为我们这主机更新频率慢 所以滤波可以不做
 
 
-
+/**
+ * delay parameter to the slave.
+ *
+ * The host uniformly sets the delay parameter to the slave.
+ * This parameter will be passed to the slave via FOLLOW_ME by telem2.
+ * 0 means this parameter is not enabled.
+ * 
+ * @min 0
+ * @max 10
+ * @unit s
+ * @group Commander
+ */
+PARAM_DEFINE_FLOAT(FT_SLAVE_DELAY, 0);
