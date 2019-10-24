@@ -207,9 +207,6 @@ void FollowTarget::on_active()
 		// _curr_master.master_utc = get_master.master_utc;//主机的utc时间
 		// hrt_abstime slave_utc_now = _slave_gps.time_utc_usec + (hrt_absolute_time()-_slave_gps.timestamp);
 		// delay_s   =  (slave_utc_now - get_master.master_utc ) * 1e-6f;
-
-		//暂时延时写成参数可调
-		delay_s=_param_delay;
 		
 		
 	} 
