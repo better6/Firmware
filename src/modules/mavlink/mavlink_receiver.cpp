@@ -2542,7 +2542,9 @@ void MavlinkReceiver::handle_message_follow_me(mavlink_message_t *msg)
 	_topic.vy  = _follow_msg.vel[1];
 	_topic.vz  = _follow_msg.vel[2];
 
-	_topic.master_utc = _follow_msg.utc_time;
+	_topic.slave_delay  = _follow_msg.info[0]; //接收主机传递过来的延时参数
+
+	_topic.master_utc = _follow_msg.utc_time;  //接收主机发送消息的utc时间
 
 	//如果切换到follow_target模式，外部只需要通过FOLLOW_TARGET消息发送经度纬度高度数据即可。
 	//这个消息里还有很多其他数据还没使用。

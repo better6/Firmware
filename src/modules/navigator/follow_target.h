@@ -170,6 +170,7 @@ private:
 	float _param_vel_filter{0.2f};
 	float _param_delay{1.5f};
 	float _yaw_angle{0.0f};
+	float delay_s=0;
 
 	// Mavlink defined motion reporting capabilities
 	enum {

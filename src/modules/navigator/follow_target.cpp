@@ -147,7 +147,6 @@ void FollowTarget::on_active()
 	bool 	 _radius_exited = false;
 	bool 	 updated = false;
 	float	 dt_ms = 0;
-	float 	 delay_s=0;
 
 
 	orb_check(_follow_target_sub, &updated);
@@ -189,6 +188,18 @@ void FollowTarget::on_active()
 		formation_pre();
 		//记录主机上一次的速度。
 		_vel_pre=_master_vel;
+
+		
+		//从机延时参数是使用主机统一设置的参数 还是使用从机自己的参数
+		if(get_master.slave_delay > 5 ) //主机传递过来的统一设置的从机的延时参数，参数是FT_SLAVE_DELAY地面站设置是小数 传递的时候放大了10倍作为整数传递的
+		{
+			delay_s=  get_master.slave_delay/10.0f; //主机参数>0.5 有效 统一使用主机设置的参数FT_SLAVE_DELAY
+		}
+		else{
+			delay_s=_param_delay; //主机参数<0.5无效，使用从机自己设置的延时参数FT_POS_FF
+		}
+
+
 
 
 
