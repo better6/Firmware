@@ -346,7 +346,7 @@ void FollowTarget::on_active()
 
 		//根据主机的位置  以及从机跟随的参数 计算出从机真实应该飞往的目标位置
 		map_projection_init(&target_ref,  _curr_master.lat, _curr_master.lon);
-		map_projection_reproject(&target_ref, _target_position_offset(0), _target_position_offset(1),
+		map_projection_reproject(&target_ref, _target_position_offset(0), _target_position_offset(1),  //找到了为什么从机先于主机完成起飞后会向主机飞去，都飞向主机看起来比较危险。原因是从机完成起飞，主机还在起飞过程中 没有速度 就没有偏移量_target_position_offset的计算，这里代入后就是飞往主机所在的位置
 					 &slave_target_pos.lat, &slave_target_pos.lon);
 
 		//计算从机到目标位置的距离
@@ -463,7 +463,7 @@ void FollowTarget::on_active()
 			//if (is_mission_item_reached() && target_velocity_valid()) {
 			
 			//修改判断为高度判断,飞机达到一定高度后才会开始follow，避免从机还在向上起飞过程中 如果接到了主机更新的位置信息 就会斜着去跟
-			if ( (_navigator->get_global_position()->alt > _navigator->get_home_position()->alt + _param_follow_alt - 2.0f) && target_velocity_valid() ) {
+			if ( (_navigator->get_global_position()->alt > _navigator->get_home_position()->alt + _param_follow_alt - 2.0f) && target_velocity_valid() && (_est_target_vel.length() > 0.8F) ) {
 
 				_target_position_offset(0) = _param_follow_dis; //记录下跟随距离的参数
 				_follow_target_state = TRACK_POSITION; //目标位置有效了，进入跟随位置，如果位置没有效 代码保持在这里 从机保持悬停
