@@ -186,8 +186,6 @@ void FollowTarget::on_active()
 
 		//预处理：取所有参数、包括队形参数、主机速度方向改变从机走位的判断
 		formation_pre();
-		//记录主机上一次的速度。
-		_vel_pre=_master_vel;
 
 		
 		//从机延时参数是使用主机统一设置的参数 还是使用从机自己的参数
@@ -573,13 +571,20 @@ void FollowTarget::formation_pre()
 	//cos120 = cos-120 = -0.5
 	//cos90  = cos-90  = 0
 	//从机跟随的是主机的速度方向 根据主机前后两次的速度方向，调整从机跟随的方位，主要目的是防止主机方向变化太大时 从机交叉互换位置有相撞的可能性。
-	float cos = _vel_pre.normalized() * _master_vel.normalized();
-	if(cos < -0.5f){ //主机速度方向改变很大，超出+—120度了，从机交叉有相撞风险,那么不交叉走位了
-		if(_vehicle_id==2)      { _vehicle_id=3; }
-		else if(_vehicle_id==3) { _vehicle_id=2; }
-		else                    {                }
+	if(_master_vel.length() > 0.8F){//主机有速度了，才会进行比较
+		
+		float cos = _vel_pre.normalized() * _master_vel.normalized();
+		if(cos < -0.5f){ //主机速度方向改变很大，超出+—120度了，从机交叉有相撞风险,那么不交叉走位了
+			if(_vehicle_id==2)      { _vehicle_id=3; }
+			else if(_vehicle_id==3) { _vehicle_id=2; }
+			else                    {                }
+		}
+		//其他 主机小角度转弯 从机正常旋转跟随走位。
+
+		_vel_pre=_master_vel;
+
 	}
-	//其他 主机小角度转弯 从机正常旋转跟随走位。
+
 
 
 	if(_curr_shape==TRIANGLE){//实现三角队形
