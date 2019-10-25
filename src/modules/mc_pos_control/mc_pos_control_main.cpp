@@ -209,7 +209,8 @@ private:
 		(ParamFloat<px4::params::MPC_Z_VEL_MAX_UP>) _vel_max_up,
 		(ParamFloat<px4::params::MPC_Z_VEL_MAX_DN>) _vel_max_down,
 		(ParamFloat<px4::params::MPC_LAND_ALT1>) _slow_land_alt1,
-		(ParamFloat<px4::params::MPC_LAND_ALT2>) _slow_land_alt2,
+		(ParamFloat<px4::params::MPC_LAND_ALT2>) _slow_land_alt2,	
+		(ParamFloat<px4::params::FT_SLAVE_DELAY>) _slave_delay,
 		(ParamFloat<px4::params::MPC_XY_P>) _xy_p,
 		(ParamFloat<px4::params::MPC_XY_VEL_P>) _xy_vel_p,
 		(ParamFloat<px4::params::MPC_XY_VEL_I>) _xy_vel_i,
@@ -566,7 +567,7 @@ MulticopterPositionControl::parameters_update(bool force)
 		_flight_tasks.handleParameterUpdate();
 
 		/* initialize vectors from params and enforce constraints */
-
+		
 		_pos_p(0) = _xy_p.get()*0.8f;
 		_pos_p(1) = _xy_p.get();
 		_pos_p(2) = _z_p.get();

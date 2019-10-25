@@ -182,6 +182,21 @@ PARAM_DEFINE_FLOAT(MPC_Z_VEL_MAX_UP, 3.0f); //z轴最大的上升速度
 PARAM_DEFINE_FLOAT(MPC_Z_VEL_MAX_DN, 1.0f); //z轴最大的下降速度
 
 /**
+ * delay parameter to the slave.
+ *
+ * The host uniformly sets the delay parameter to the slave.
+ * This parameter will be passed to the slave via FOLLOW_ME by telem2.
+ * 0 means this parameter is not enabled.
+ * 
+ * @min 0
+ * @max 10
+ * @unit s
+ * @group Commander
+ */
+PARAM_DEFINE_FLOAT(FT_SLAVE_DELAY, 0);
+
+
+/**
  * Proportional gain for horizontal position error
  *
  * @min 0.0
