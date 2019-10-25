@@ -567,11 +567,11 @@ MulticopterPositionControl::parameters_update(bool force)
 
 		/* initialize vectors from params and enforce constraints */
 
-		_pos_p(0) = _xy_p.get();
+		_pos_p(0) = _xy_p.get()*0.8f;
 		_pos_p(1) = _xy_p.get();
 		_pos_p(2) = _z_p.get();
 
-		_vel_p(0) = _xy_vel_p.get();
+		_vel_p(0) = _xy_vel_p.get()*0.8f;
 		_vel_p(1) = _xy_vel_p.get();
 		_vel_p(2) = _z_vel_p.get();
 
