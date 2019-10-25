@@ -463,7 +463,7 @@ void FollowTarget::on_active()
 			//if (is_mission_item_reached() && target_velocity_valid()) {
 			
 			//修改判断为高度判断,飞机达到一定高度后才会开始follow，避免从机还在向上起飞过程中 如果接到了主机更新的位置信息 就会斜着去跟
-			if ( (_navigator->get_global_position()->alt > _navigator->get_home_position()->alt + _param_follow_alt - 2.0f) && target_velocity_valid() && (_est_target_vel.length() > 0.8F) ) {
+			if ( (_navigator->get_global_position()->alt > _navigator->get_home_position()->alt + _param_follow_alt - 2.0f) && target_velocity_valid() && (_est_target_vel.length() > 0.8F) ) { //从机先于主机完成起飞后 不会再奔向主机
 
 				_target_position_offset(0) = _param_follow_dis; //记录下跟随距离的参数
 				_follow_target_state = TRACK_POSITION; //目标位置有效了，进入跟随位置，如果位置没有效 代码保持在这里 从机保持悬停
