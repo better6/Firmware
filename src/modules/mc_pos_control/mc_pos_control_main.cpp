@@ -1595,8 +1595,9 @@ MulticopterPositionControl::vel_sp_slewrate()
 	/* limit total horizontal acceleration */
 	if (acc_xy.length() > _acceleration_state_dependent_xy) {
 		vel_sp_xy = _acceleration_state_dependent_xy * acc_xy.normalized() * _dt + vel_sp_prev_xy;
-		_vel_sp(0) = vel_sp_xy(0);
-		_vel_sp(1) = vel_sp_xy(1);
+		//定点模式下摇杆回中抖动
+		// _vel_sp(0) = vel_sp_xy(0);
+		// _vel_sp(1) = vel_sp_xy(1);
 	}
 
 	/* limit vertical acceleration */
