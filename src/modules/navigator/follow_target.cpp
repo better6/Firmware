@@ -587,10 +587,11 @@ void FollowTarget::formation_pre()
 
 
 
+
 	if(_curr_shape==TRIANGLE){//实现三角队形
 		
-		if(2==_vehicle_id)     {  _param_follow_side=5;  } //2号飞机左后侧
-		else if(3==_vehicle_id){  _param_follow_side=4;  } //3号飞机飞右后侧
+		if(2==_vehicle_id)     {  _param_follow_side=2;  } //2号飞机左后侧
+		else if(3==_vehicle_id){  _param_follow_side=3;  } //3号飞机飞右后侧
 		else                   {  _param_follow_side=1;  }
 	}
 	else if(_curr_shape==HORIZONTAL){
@@ -600,8 +601,8 @@ void FollowTarget::formation_pre()
 		// 	else                   {  _param_follow_side=1;  }
 		// }
 		// else{
-			if(2==_vehicle_id)     {  _param_follow_side=2;  } //2号飞机左侧
-			else if(3==_vehicle_id){  _param_follow_side=3;  } //3号飞机飞右侧
+			if(2==_vehicle_id)     {  _param_follow_side=5;  } //2号飞机左侧
+			else if(3==_vehicle_id){  _param_follow_side=4;  } //3号飞机飞右侧
 			else                   {  _param_follow_side=1;  }
 		// }
 
