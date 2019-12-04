@@ -755,12 +755,7 @@ if (_v_control_mode.flag_control_rates_enabled) {
 				_actuators.control[1] = (PX4_ISFINITE(_att_control(1))) ? _att_control(1) : 0.0f;
 				_actuators.control[1] = math::constrain(_actuators.control[1], -0.3f, 0.3f);
 
-				if (_pos_triple.current.type == position_setpoint_s::SETPOINT_TYPE_IDLE && !_v_control_mode.flag_control_manual_enabled){ 
-					_actuators.control[2] = 0.0f;
-				}
-				else{
-					_actuators.control[2] = (PX4_ISFINITE(_att_control(2))) ? _att_control(2) : 0.0f;
-				}
+				_actuators.control[2] = (PX4_ISFINITE(_att_control(2))) ? _att_control(2) : 0.0f;
 				_actuators.control[2] = math::constrain(_actuators.control[2], -1.0f, 1.0f); //zlfxg20170711
 				
 				_actuators.control[3] = (PX4_ISFINITE(_thrust_sp)) ? _thrust_sp : 0.0f;
