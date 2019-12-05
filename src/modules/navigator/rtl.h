@@ -80,14 +80,14 @@ private:
 	void		advance_rtl();
 
 	enum RTLState {
-		RTL_STATE_NONE = 0,
-		RTL_STATE_CLIMB,
-		RTL_STATE_RETURN,
-		RTL_STATE_TRANSITION_TO_MC,
-		RTL_STATE_DESCEND,
-		RTL_STATE_LOITER,
-		RTL_STATE_LAND,
-		RTL_STATE_LANDED,
+		RTL_STATE_NONE = 0,         //正常降落的阶段流程
+		RTL_STATE_CLIMB,            //1. 先CLIMB爬升到安全高度
+		RTL_STATE_RETURN,	        //2. RETURN直接飞往home点上方
+		RTL_STATE_TRANSITION_TO_MC, 
+		RTL_STATE_DESCEND,          //3. 达到home点上方后开始降落，这段DESCEND是指RTL_RETURN_ALT到到悬停高度RTL_DESCEND_ALT这一段
+		RTL_STATE_LOITER,			//4 在悬停高度处 RTL_DESCEND_ALT是否悬停延时
+		RTL_STATE_LAND,             //5 降落（落地）
+		RTL_STATE_LANDED,           //6 已经落地（加锁）
 	} _rtl_state{RTL_STATE_NONE};
 
 	bool _rtl_alt_min{false};

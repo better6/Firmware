@@ -59,7 +59,7 @@ PARAM_DEFINE_FLOAT(RTL_RETURN_ALT, 60);
 
 
 /**
- * Return mode loiter altitude   //2. 返航降落阶段配合悬停时间RTL_LAND_DELAY 飞机在这个高度保持悬停
+ * Return mode loiter altitude   //2. 返航降落阶段配合悬停时间RTL_LAND_DELAY 飞机在这个高度保持悬停。距离home点近距离返航时 飞机会上升到这个高度进行返航
  *
  * Stay at this altitude above home position after RTL descending.
  * Land (i.e. slowly descend) from this altitude if autolanding allowed.

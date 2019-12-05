@@ -37,12 +37,6 @@
  * @author Anton Babushkin <anton.babushkin@me.com>
  */
 
-//湖南千牛无人机择点降落的思路
-//在commander.cpp中判断电量是否低于阈值，低于阈值的时候判断开始开启辅助降落，
-//是的话 替换降落的点的“home”然后切换到rtl模式
-//1.需要知道home点是怎么获取的，一共在几处使用，尤其是返航是怎么使用的
-//2.检测的工作 参数定义都可以放在commander.cpp中处理，
-//3.最后切换返航只是看看返航模式的处理过程
 
 #include "rtl.h"
 #include "navigator.h"
@@ -76,11 +70,15 @@ RTL::rtl_type() const
 	return _param_rtl_type.get();
 }
 
+
+//第一次切换到返航模式的 初始化函数
+
 void
 RTL::on_activation()
 {
 	if (_navigator->get_land_detected()->landed) {
 		// for safety reasons don't go into RTL if landed
+		//飞机已经落地 不会在进入rtl模式，注意这是一个状态机，跟踪下看看有几个状态 怎么交替的
 		_rtl_state = RTL_STATE_LANDED;
 
 	} else if ((rtl_type() == RTL_LAND) && _navigator->on_mission_landing()) {
@@ -101,6 +99,8 @@ RTL::on_activation()
 	set_rtl_item();
 }
 
+//
+
 void
 RTL::on_active()
 {
@@ -115,6 +115,11 @@ RTL::set_return_alt_min(bool min)
 {
 	_rtl_alt_min = min;
 }
+
+
+
+//根据返航不同阶段 不同的状态机
+//确定当前期望的航点信息
 
 void
 RTL::set_rtl_item()
@@ -137,49 +142,71 @@ RTL::set_rtl_item()
 
 	_navigator->set_can_loiter_at_sp(false);
 
+	//获取home点的位置
 	const home_position_s &home = *_navigator->get_home_position();
+	//获取gps坐标
 	const vehicle_global_position_s &gpos = *_navigator->get_global_position();
-
+	//获取航点信息
 	position_setpoint_triplet_s *pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 
 	// check if we are pretty close to home already
+	//检查现在的位置是不是已经距离home很近了，很近了不需要上升安全高度可以直接降落
 	const float home_dist = get_distance_to_next_waypoint(home.lat, home.lon, gpos.lat, gpos.lon);
 
 	// compute the return altitude
+	//如果当前已经大于返航高度就以当前高度返航，如果当前高度不高 那就上升到安全高度再返航！
 	float return_alt = max(home.alt + _param_return_alt.get(), gpos.alt);
 
 	// we are close to home, limit climb to min
+	//距离home很近的时候 飞机不会再上升到安全高度RTL_RETURN_ALT进行返航，而是相对升高点RTL_DESCEND_ALT进行返航
 	if (home_dist < _param_rtl_min_dist.get()) {
 		return_alt = home.alt + _param_descend_alt.get();
 	}
 
 	// compute the loiter altitude
+	//盘旋高度
 	const float loiter_altitude = min(home.alt + _param_descend_alt.get(), gpos.alt);
 
+
+	//上面都是在进行初始化取参数，
+	//下面开始根据状态机进行动作
+	// //	enum RTLState {
+	// // 	RTL_STATE_NONE = 0,         //正常降落的阶段流程
+	// // 	RTL_STATE_CLIMB,            //1. 先CLIMB爬升到安全高度
+	// // 	RTL_STATE_RETURN,	        //2. RETURN直接飞往home点上方
+	// // 	RTL_STATE_TRANSITION_TO_MC, 
+	// // 	RTL_STATE_DESCEND,          //3. 达到home点上方后开始降落，这段DESCEND是指RTL_RETURN_ALT到到悬停高度RTL_DESCEND_ALT这一段
+	// // 	RTL_STATE_LOITER,			//4 在悬停高度处 RTL_DESCEND_ALT是否悬停延时
+	// // 	RTL_STATE_LAND,             //5 降落（落地）
+	// // 	RTL_STATE_LANDED,           //6 已经落地（加锁）
+	// // } _rtl_state{RTL_STATE_NONE};
+
 	switch (_rtl_state) {
+	//1. 爬升到安全高度阶段
 	case RTL_STATE_CLIMB: {
 
-			_mission_item.nav_cmd = NAV_CMD_WAYPOINT;
-			_mission_item.lat = gpos.lat;
+			_mission_item.nav_cmd = NAV_CMD_WAYPOINT; //普通的waypoint
+			_mission_item.lat = gpos.lat;             //当前的经度纬度
 			_mission_item.lon = gpos.lon;
-			_mission_item.altitude = return_alt;
-			_mission_item.altitude_is_relative = false;
-			_mission_item.yaw = NAN;
-			_mission_item.acceptance_radius = _navigator->get_acceptance_radius();
-			_mission_item.time_inside = 0.0f;
-			_mission_item.autocontinue = true;
-			_mission_item.origin = ORIGIN_ONBOARD;
+			_mission_item.altitude = return_alt;      //爬升到“安全高度”，这个在上面有分三种情况讨论
+			_mission_item.altitude_is_relative = false;//使用的不是相对高度，是绝对海拔高度
+			_mission_item.yaw = NAN;                   //上升保持航向
+			_mission_item.acceptance_radius = _navigator->get_acceptance_radius();//达到判断：可接受的达到半径
+			_mission_item.time_inside = 0.0f; 		   //达到这个点不悬停延时
+			_mission_item.autocontinue = true;         //执行完这个点 继续执行下一个点
+			_mission_item.origin = ORIGIN_ONBOARD;     //航点来源onboard飞控内部产生的
 
 			mavlink_and_console_log_info(_navigator->get_mavlink_log_pub(), "RTL: climb to %d m (%d m above home)",
 						     (int)ceilf(return_alt), (int)ceilf(return_alt - _navigator->get_home_position()->alt));
 			break;
 		}
-
+	
+	//2. 爬升到安全高度后 就可以执行返航了RETURN,直线飞往home点上方
 	case RTL_STATE_RETURN: {
 
 			// don't change altitude
-			_mission_item.nav_cmd = NAV_CMD_WAYPOINT;
-			_mission_item.lat = home.lat;
+			_mission_item.nav_cmd = NAV_CMD_WAYPOINT; //普通航点
+			_mission_item.lat = home.lat;             //飞往home上方 
 			_mission_item.lon = home.lon;
 			_mission_item.altitude = return_alt;
 			_mission_item.altitude_is_relative = false;
@@ -190,7 +217,7 @@ RTL::set_rtl_item()
 				_mission_item.yaw = home.yaw;
 
 			} else {
-				// use current heading to home
+				// use current heading to home  //机头指向home点
 				_mission_item.yaw = get_bearing_to_next_waypoint(gpos.lat, gpos.lon, home.lat, home.lon);
 			}
 
@@ -204,12 +231,13 @@ RTL::set_rtl_item()
 
 			break;
 		}
-
+	//
 	case RTL_STATE_TRANSITION_TO_MC: {
 			set_vtol_transition_item(&_mission_item, vtol_vehicle_status_s::VEHICLE_VTOL_STATE_MC);
 			break;
 		}
 
+	//3 到达home上方以后开始进行降落，这一段DESCEND是只降落到悬停高度RTL_DESCEND_ALT
 	case RTL_STATE_DESCEND: {
 			_mission_item.nav_cmd = NAV_CMD_WAYPOINT;
 			_mission_item.lat = home.lat;
@@ -240,6 +268,7 @@ RTL::set_rtl_item()
 			break;
 		}
 
+	//4 降落到悬停高度 判断是否悬停，悬停多久（参数RTL_LAND_DELAY在此处悬停多久）
 	case RTL_STATE_LOITER: {
 			const bool autoland = (_param_land_delay.get() > FLT_EPSILON);
 
@@ -269,7 +298,8 @@ RTL::set_rtl_item()
 
 			break;
 		}
-
+	
+	//5 进行落地
 	case RTL_STATE_LAND: {
 			// land at home position
 			_mission_item.nav_cmd = NAV_CMD_LAND;
@@ -287,6 +317,7 @@ RTL::set_rtl_item()
 			break;
 		}
 
+	//6 已经落地
 	case RTL_STATE_LANDED: {
 			set_idle_item(&_mission_item);
 			set_return_alt_min(false);
