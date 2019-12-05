@@ -151,6 +151,7 @@ RTL::set_rtl_item()
 	_navigator->set_can_loiter_at_sp(false);
 
 	//获取home点的位置
+	//可全局搜索HOME点来源一 返航主要返航到HOME点，home点来源与哪
 	const home_position_s &home = *_navigator->get_home_position();
 	//获取gps坐标
 	const vehicle_global_position_s &gpos = *_navigator->get_global_position();

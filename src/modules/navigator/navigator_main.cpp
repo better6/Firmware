@@ -136,6 +136,7 @@ Navigator::home_position_update(bool force)
 	bool updated = false;
 	orb_check(_home_pos_sub, &updated);
 
+	//可全局搜索HOME点来源二 直接从ORB_ID(home_position)获取的
 	if (updated || force) {
 		orb_copy(ORB_ID(home_position), _home_pos_sub, &_home_pos);
 	}
@@ -302,6 +303,7 @@ Navigator::run()
 		/* home position updated */
 		orb_check(_home_pos_sub, &updated);
 
+		//可全局搜索HOME点来源二 直接从ORB_ID(home_position)获取的，那么是谁在发布
 		if (updated) {
 			home_position_update();
 		}

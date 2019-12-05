@@ -887,6 +887,7 @@ Commander::handle_command(vehicle_status_s *status_local, const vehicle_command_
 
 						/* announce new home position */
 						if (*home_pub != nullptr) {
+							//可全局搜索HOME点来源三 这是地面站设置的home点
 							orb_publish(ORB_ID(home_position), *home_pub, home);
 
 						} else {
@@ -1144,6 +1145,8 @@ Commander::set_home_position(orb_advert_t &homePub, home_position_s &home, bool 
 
 	/* announce new home position */
 	if (homePub != nullptr) {
+		//可全局搜索HOME点来源四 这是飞控自动获取的home点。是怎么获取的
+		//当gps有效时，飞机的解锁点就是飞机的home这一点我好像实测过
 		orb_publish(ORB_ID(home_position), homePub, &home);
 
 	} else {
