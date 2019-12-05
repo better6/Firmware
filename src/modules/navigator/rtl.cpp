@@ -37,6 +37,11 @@
  * @author Anton Babushkin <anton.babushkin@me.com>
  */
 
+//总结返航模式的执行过程，其实主要是返航执行过程中阶段的划分（状态机）
+//总的状态机下面有我这里只是描述一遍：1.先上升到安全高度  2.飞往home点上方  3.下降到悬停高度  4.是否保持悬停  5.继续下降落地  6.已经落地
+//然后这里rtl.cpp就是根据不同的状态机设置不同的期望位置信息，一个状态到位后继续下一阶段的执行
+//重点的函数只有一个set_rtl_item();但是并不难。
+
 
 #include "rtl.h"
 #include "navigator.h"
@@ -96,15 +101,18 @@ RTL::on_activation()
 		_rtl_state = RTL_STATE_RETURN;
 	}
 
+	//根据不同的状态机 初始化设置不同的期望航点信息
 	set_rtl_item();
 }
 
-//
 
+//周期执行的函数
+//重点的函数就这一个set_rtl_item，根据不同阶段的不同状态机设置期望的位置信息
 void
 RTL::on_active()
 {
 	if (_rtl_state != RTL_STATE_LANDED && is_mission_item_reached()) {
+		//当rtl还没有落地RTL_STATE_LANDED（还没有结束的时候），当前状态达到后就继续下一阶段的执行
 		advance_rtl();
 		set_rtl_item();
 	}
