@@ -37,6 +37,13 @@
  * @author Anton Babushkin <anton.babushkin@me.com>
  */
 
+//湖南千牛无人机择点降落的思路
+//在commander.cpp中判断电量是否低于阈值，低于阈值的时候判断开始开启辅助降落，
+//是的话 替换降落的点的“home”然后切换到rtl模式
+//1.需要知道home点是怎么获取的，一共在几处使用，尤其是返航是怎么使用的
+//2.检测的工作 参数定义都可以放在commander.cpp中处理，
+//3.最后切换返航只是看看返航模式的处理过程
+
 #include "rtl.h"
 #include "navigator.h"
 
