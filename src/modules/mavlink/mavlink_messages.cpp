@@ -4420,6 +4420,114 @@ protected:
 
 
 
+//自定义的一个mavlink消息 向外发送到底需要几个步骤
+//可全局搜索自定义MAVLINK发送二 
+//一 是自定义mavlink消息 在common.xml中自定义mavlink消息 重新生成mavlink协议 这里才可以直接使用
+//在那里重新定义mavlink消息时 删除所有的文件只保留message_define文件夹，
+//然后用generate工具利用common.xml重新生成common文件夹，利用standard.xml重新生成standard文件夹，
+//其他的文件都是重新生成的。避免有校验位不对的问题。
+
+//注意到没有 定义好后这里就可以使用了 连头文件都不需要引用，因为头文件在生成的时候已经自动包含在common.h里了
+
+//二 这里先定义实现 以及添加到下面的发送列表中
+//三 就是在mavlink_main.cpp中进行配置就可以发送了
+class MavlinkStreamTrackPosition : public MavlinkStream
+{
+public:
+    const char *get_name() const
+    {
+        return MavlinkStreamTrackPosition::get_name_static();
+    }
+
+    static const char *get_name_static()
+    {
+        return "TRACK_POSITION";
+    }
+
+    static uint16_t get_id_static()
+    {
+        return MAVLINK_MSG_ID_TRACK_POSITION;
+    }
+
+    uint16_t get_id()
+    {
+        return get_id_static();
+    }
+
+    static MavlinkStream *new_instance(Mavlink *mavlink)
+    {
+        return new MavlinkStreamTrackPosition(mavlink);
+    }
+
+    unsigned get_size()
+    {
+        return MAVLINK_MSG_ID_TRACK_POSITION_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES;
+    }
+
+	bool const_rate()
+	{
+		return true;
+	}
+
+private:
+    MavlinkOrbSubscription *_vehicle_status_sub;
+    MavlinkOrbSubscription *_globalpos_sub;
+
+
+    /* do not allow top copying this class */
+    MavlinkStreamTrackPosition(MavlinkStreamTrackPosition &) = delete;
+    MavlinkStreamTrackPosition &operator = (const MavlinkStreamTrackPosition &) = delete;
+
+protected:
+    explicit MavlinkStreamTrackPosition(Mavlink *mavlink) : MavlinkStream(mavlink),
+        _vehicle_status_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_status))),
+        _globalpos_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_global_position)))
+    {}
+
+    bool send(const hrt_abstime t)       
+    {
+        
+		//bool updated = false;
+
+		//订阅vehicle_status msg消息，从此消息中可以判断飞机的SYS_ID  status.system_id
+        vehicle_status_s status = {}; 
+        _vehicle_status_sub->update(&status);
+
+		 mavlink_track_position_t msg = {};
+
+      // if(status.system_id==1) {  //ID为1说明是主机,如果是主机发送编队信息	
+
+			//订阅全球位置坐标
+            vehicle_global_position_s global = {};
+			if (_globalpos_sub->update(&global)) 
+			{
+               // updated = true;
+
+
+				// float delay=0; //需要定义成static吗
+				// param_get(param_find("FT_SLAVE_DELAY"), &delay);
+				
+				
+    		}
+
+			msg.track_pos[0]=1;
+			msg.track_pos[1]=2;
+			msg.track_pos[2]=3;
+			// msg.land_pos[0]=4;
+			// msg.land_pos[1]=5;
+			// msg.land_pos[2]=6;
+            //if(updated){
+                mavlink_msg_track_position_send_struct(_mavlink->get_channel(), &msg);
+            //}
+
+			return true;
+       // }
+        
+    }
+};
+
+
+
 static const StreamListItem streams_list[] = {
 	StreamListItem(&MavlinkStreamHeartbeat::new_instance, &MavlinkStreamHeartbeat::get_name_static, &MavlinkStreamHeartbeat::get_id_static),
 	StreamListItem(&MavlinkStreamStatustext::new_instance, &MavlinkStreamStatustext::get_name_static, &MavlinkStreamStatustext::get_id_static),
@@ -4473,7 +4581,8 @@ static const StreamListItem streams_list[] = {
 	StreamListItem(&MavlinkStreamGroundTruth::new_instance, &MavlinkStreamGroundTruth::get_name_static, &MavlinkStreamGroundTruth::get_id_static),
 	StreamListItem(&MavlinkStreamPing::new_instance, &MavlinkStreamPing::get_name_static, &MavlinkStreamPing::get_id_static),
 //	StreamListItem(&MavlinkStreamFollowTarget::new_instance, &MavlinkStreamFollowTarget::get_name_static, &MavlinkStreamFollowTarget::get_id_static),
-	StreamListItem(&MavlinkStreamFollowMe::new_instance, &MavlinkStreamFollowMe::get_name_static, &MavlinkStreamFollowMe::get_id_static)
+	StreamListItem(&MavlinkStreamFollowMe::new_instance, &MavlinkStreamFollowMe::get_name_static, &MavlinkStreamFollowMe::get_id_static),
+	StreamListItem(&MavlinkStreamTrackPosition::new_instance, &MavlinkStreamTrackPosition::get_name_static, &MavlinkStreamTrackPosition::get_id_static)
 };
 
 const char *get_stream_name(const uint16_t msg_id)

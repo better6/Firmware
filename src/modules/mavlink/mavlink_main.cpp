@@ -2036,7 +2036,8 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("SYS_STATUS", 0.2f);//电量
 		configure_stream("DISTANCE_SENSOR", 0.5f);//距离传感器
 		configure_stream("VFR_HUD", 2.0f); //这是速度数据不可屏蔽
-
+		//可全局搜索自定义MAVLINK发送三
+		configure_stream("TRACK_POSITION", 2.0f);
 		//configure_stream("POSITION_TARGET_GLOBAL_INT", 1.0f);//期望的全球坐标
 		//configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);//pwm输出
 
