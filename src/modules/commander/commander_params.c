@@ -773,3 +773,132 @@ PARAM_DEFINE_INT32(COM_FLIGHT_UUID, 0);
  * @group Mission
  */
 PARAM_DEFINE_INT32(COM_TAKEOFF_ACT, 0);
+
+/**
+ * home1 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H1_LAT, 0);
+
+/**
+ * home1 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H1_LON, 0);
+
+/**
+ * home1 
+ * 
+ * @group Commander
+ * 
+ */
+PARAM_DEFINE_INT32(H1_ALT, 0);
+
+/**
+ * home2 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H2_LAT, 0);
+
+/**
+ * home2 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H2_LON, 0);
+
+/**
+ * home2 
+ * 
+ * @group Commander
+ * 
+ */
+PARAM_DEFINE_INT32(H2_ALT, 0);
+
+/**
+ * home3 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H3_LAT, 0);
+
+/**
+ * home3 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H3_LON, 0);
+
+/**
+ * home3 
+ * 
+ * @group Commander
+ * 
+ */
+PARAM_DEFINE_INT32(H3_ALT, 0);
+
+/**
+ * home4 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H4_LAT, 0);
+
+/**
+ * home4 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H4_LON, 0);
+
+/**
+ * home4 
+ * 
+ * @group Commander
+ * 
+ */
+PARAM_DEFINE_INT32(H4_ALT, 0);
+
+/**
+ * home5 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H5_LAT, 0);
+
+/**
+ * home5 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H5_LON, 0);
+
+/**
+ * home5 
+ * 
+ * @group Commander
+ * 
+ */
+PARAM_DEFINE_INT32(H5_ALT, 0);
+
+/**
+ * Whether to enable the backup land point 
+ * 
+ * @group Commander
+ * 
+ */
+PARAM_DEFINE_INT32(H0_ENABLE, 0); //0关闭 1开启
+
+/**
+ * Alternative point detection voltage
+ *
+ * @group Commander
+ * @min 10.5
+ * @max 25.2
+ * @decimal 2
+ * @increment 0.01
+ */
+PARAM_DEFINE_FLOAT(H0_VOL, 25.2f);

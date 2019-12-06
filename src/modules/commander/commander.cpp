@@ -1198,6 +1198,24 @@ Commander::run()
 	param_t _param_flight_uuid = param_find("COM_FLIGHT_UUID");
 	param_t _param_takeoff_finished_action = param_find("COM_TAKEOFF_ACT");
 
+	param_t _param_h1_lat = param_find("H1_LAT");
+	param_t _param_h1_lon = param_find("H1_LON");
+	param_t _param_h1_alt = param_find("H1_ALT");
+	param_t _param_h2_lat = param_find("H2_LAT");
+	param_t _param_h2_lon = param_find("H2_LON");
+	param_t _param_h2_alt = param_find("H2_ALT");
+	param_t _param_h3_lat = param_find("H3_LAT");
+	param_t _param_h3_lon = param_find("H3_LON");
+	param_t _param_h3_alt = param_find("H3_ALT");
+	param_t _param_h4_lat = param_find("H4_LAT");
+	param_t _param_h4_lon = param_find("H4_LON");
+	param_t _param_h4_alt = param_find("H4_ALT");
+	param_t _param_h5_lat = param_find("H5_LAT");
+	param_t _param_h5_lon = param_find("H5_LON");
+	param_t _param_h5_alt = param_find("H5_ALT");
+	param_t _param_h0_enable = param_find("H0_ENABLE");
+	param_t _param_h0_vol = param_find("H0_VOL");
+
 	param_t _param_fmode_1 = param_find("COM_FLTMODE1");
 	param_t _param_fmode_2 = param_find("COM_FLTMODE2");
 	param_t _param_fmode_3 = param_find("COM_FLTMODE3");
@@ -1446,6 +1464,25 @@ Commander::run()
 
 	int32_t takeoff_complete_act = 0;
 
+	int32_t h1_lat=0;
+	int32_t h1_lon=0;
+	int32_t h1_alt=0;
+	int32_t h2_lat=0;
+	int32_t h2_lon=0;
+	int32_t h2_alt=0;
+	int32_t h3_lat=0;
+	int32_t h3_lon=0;
+	int32_t h3_alt=0;
+	int32_t h4_lat=0;
+	int32_t h4_lon=0;
+	int32_t h4_alt=0;
+	int32_t h5_lat=0;
+	int32_t h5_lon=0;
+	int32_t h5_alt=0;
+	int32_t h0_enable=0;
+	float   h0_vol=25.2f;
+
+
 	/* Thresholds for engine failure detection */
 	float ef_throttle_thres = 1.0f;
 	float ef_current2throttle_thres = 0.0f;
@@ -1534,7 +1571,7 @@ Commander::run()
 			/* Safety parameters */
 			param_get(_param_enable_datalink_loss, &datalink_loss_act);
 			param_get(_param_enable_rc_loss, &rc_loss_act);
-			param_get(_param_datalink_loss_timeout, &datalink_loss_timeout);
+			param_get(_param_datalink_loss_timeout, &datalink_loss_timeout);			
 			param_get(_param_highlatencydatalink_loss_timeout, &highlatencydatalink_loss_timeout);
 			param_get(_param_rc_loss_timeout, &rc_loss_timeout);
 			param_get(_param_rc_in_off, &rc_in_off);
@@ -1586,8 +1623,33 @@ Commander::run()
 
 			param_get(_param_takeoff_finished_action, &takeoff_complete_act);
 
+			param_get(_param_h1_lat, &h1_lat);
+			param_get(_param_h1_lon, &h1_lon);
+			param_get(_param_h1_alt, &h1_alt);
+			param_get(_param_h2_lat, &h2_lat);
+			param_get(_param_h2_lon, &h2_lon);
+			param_get(_param_h2_alt, &h2_alt);
+			param_get(_param_h3_lat, &h3_lat);
+			param_get(_param_h3_lon, &h3_lon);
+			param_get(_param_h3_alt, &h3_alt);
+			param_get(_param_h4_lat, &h4_lat);
+			param_get(_param_h4_lon, &h4_lon);
+			param_get(_param_h4_alt, &h4_alt);
+			param_get(_param_h5_lat, &h5_lat);
+			param_get(_param_h5_lon, &h5_lon);
+			param_get(_param_h5_alt, &h5_alt);
+			param_get(_param_h0_enable, &h0_enable);
+			param_get(_param_h0_vol, &h0_vol);
+
 			param_init_forced = false;
-		}
+
+			// warnx("1: lat = %d, lon = %d, alt = %d ", h1_lat, h1_lon,h1_alt);
+			// warnx("2: lat = %d, lon = %d, alt = %d ", h2_lat, h2_lon,h2_alt);
+			// warnx("3: lat = %d, lon = %d, alt = %d ", h3_lat, h3_lon,h3_alt);
+			// warnx("4: lat = %d, lon = %d, alt = %d ", h4_lat, h4_lon,h4_alt);
+			// warnx("5: lat = %d, lon = %d, alt = %d ", h5_lat, h5_lon,h5_alt);
+			// warnx("0: enable = %d, vol = %2.2f", h0_enable, (double)h0_vol);
+		}	
 
 		/* handle power button state */
 		orb_check(power_button_state_sub, &updated);
