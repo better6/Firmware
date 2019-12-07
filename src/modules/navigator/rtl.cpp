@@ -211,7 +211,30 @@ RTL::set_rtl_item()
 
 	//开启了备选降落点
 	if(h0_enable==1){
+		//如果开启了备降点，会不会开启了备降点 但是正常的切换rtl 电压还没到呢，会所以在这里还要检测电压
+		//如果开启了备降点判断当前位置距离哪个近
+		dist1=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h1_lat*1e-7, h1_lon*1e-7);
+		dist2=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h2_lat*1e-7, h2_lon*1e-7);
+		dist3=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h3_lat*1e-7, h3_lon*1e-7);
+		dist4=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h4_lat*1e-7, h4_lon*1e-7);
+		dist5=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h5_lat*1e-7, h5_lon*1e-7);
+		warnx("dist1 = %6.6f",(double)dist1);
+		warnx("dist2 = %6.6f",(double)dist2);
+		warnx("dist3 = %6.6f",(double)dist3);
+		warnx("dist4 = %6.6f",(double)dist4);
+		warnx("dist5 = %6.6f",(double)dist5);
+	
+		float range=dist1;
+		uint8_t point=0;
 
+		if(range > dist2){  range=dist2; point=2; home.lat=(double)(h2_lat*1e-7);  home.lon=(double)(h2_lon*1e-7);  home.alt=(float)(h2_alt);}
+		else             {  range=dist1; point=1; home.lat=h1_lat*1e-7;  home.lon=h1_lon*1e-7;  home.alt=h1_alt;}
+		if(range > dist3){  range=dist3; point=3; home.lat=h3_lat*1e-7;  home.lon=h3_lon*1e-7;  home.alt=h3_alt;}
+		if(range > dist4){  range=dist4; point=4; home.lat=h4_lat*1e-7;  home.lon=h4_lon*1e-7;  home.alt=h4_alt;}
+		if(range > dist5){  range=dist5; point=5; home.lat=h5_lat*1e-7;  home.lon=h5_lon*1e-7;  home.alt=h5_alt;}
+		warnx("point=%d",point);
+		mavlink_and_console_log_info(_navigator->get_mavlink_log_pub(), "#低电压返航降落到%d号备降点",point);
+	
 	}
 	//获取航点信息
 	position_setpoint_triplet_s *pos_sp_triplet = _navigator->get_position_setpoint_triplet();
@@ -242,27 +265,9 @@ RTL::set_rtl_item()
 
 
 //	 get_distance_to_next_waypoint(gpos.lat, gpos.lon, _mission_item.lat, _mission_item.lon);
-	dist1=get_distance_to_next_waypoint(123.1234567, 123.1234567, h1_lat*1e-7, h1_lon*1e-7);
-	dist2=get_distance_to_next_waypoint(123.1234567, 123.1234567, h2_lat*1e-7, h2_lon*1e-7);
-	dist3=get_distance_to_next_waypoint(123.1234567, 123.1234567, h3_lat*1e-7, h3_lon*1e-7);
-	dist4=get_distance_to_next_waypoint(123.1234567, 123.1234567, h4_lat*1e-7, h4_lon*1e-7);
-	dist5=get_distance_to_next_waypoint(123.1234567, 123.1234567, h5_lat*1e-7, h5_lon*1e-7);
 
-	warnx("dist1 = %6.6f",(double)dist1);
-	warnx("dist2 = %6.6f",(double)dist2);
-	warnx("dist3 = %6.6f",(double)dist3);
-	warnx("dist4 = %6.6f",(double)dist4);
-	warnx("dist5 = %6.6f",(double)dist5);
 
-	float range=dist1;
-	uint8_t point=0;
-
-	if(range > dist2){  range=dist2; point=2; home.lat=(double)(h2_lat*1e-7);  home.lon=(double)(h2_lon*1e-7);  home.alt=(float)(h2_alt);}
-	else             {  range=dist1; point=1; home.lat=h1_lat*1e-7;  home.lon=h1_lon*1e-7;  home.alt=h1_alt;}
-	if(range > dist3){  range=dist3; point=3; home.lat=h3_lat*1e-7;  home.lon=h3_lon*1e-7;  home.alt=h3_alt;}
-	if(range > dist4){  range=dist4; point=4; home.lat=h4_lat*1e-7;  home.lon=h4_lon*1e-7;  home.alt=h4_alt;}
-	if(range > dist5){  range=dist5; point=5; home.lat=h5_lat*1e-7;  home.lon=h5_lon*1e-7;  home.alt=h5_alt;}
-	warnx("point=%d",point);
+	
 
 
 
