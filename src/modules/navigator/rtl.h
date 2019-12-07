@@ -97,6 +97,22 @@ private:
 		(ParamFloat<px4::params::RTL_DESCEND_ALT>) _param_descend_alt,
 		(ParamFloat<px4::params::RTL_LAND_DELAY>) _param_land_delay,
 		(ParamFloat<px4::params::RTL_MIN_DIST>) _param_rtl_min_dist,
-		(ParamInt<px4::params::RTL_TYPE>) _param_rtl_type
+		(ParamInt<px4::params::RTL_TYPE>) _param_rtl_type,
+		(ParamInt<px4::params::H0_ENABLE>) _param_h0_enable,
+		(ParamInt<px4::params::H1_LAT>) _param_h1_lat,
+		(ParamInt<px4::params::H1_LON>) _param_h1_lon,
+		(ParamInt<px4::params::H1_ALT>) _param_h1_alt,
+		(ParamInt<px4::params::H2_LAT>) _param_h2_lat,
+		(ParamInt<px4::params::H2_LON>) _param_h2_lon,
+		(ParamInt<px4::params::H2_ALT>) _param_h2_alt,
+		(ParamInt<px4::params::H3_LAT>) _param_h3_lat,
+		(ParamInt<px4::params::H3_LON>) _param_h3_lon,
+		(ParamInt<px4::params::H3_ALT>) _param_h3_alt,
+		(ParamInt<px4::params::H4_LAT>) _param_h4_lat,
+		(ParamInt<px4::params::H4_LON>) _param_h4_lon,
+		(ParamInt<px4::params::H4_ALT>) _param_h4_alt,
+		(ParamInt<px4::params::H5_LAT>) _param_h5_lat,
+		(ParamInt<px4::params::H5_LON>) _param_h5_lon,
+		(ParamInt<px4::params::H5_ALT>) _param_h5_alt
 	)
 };

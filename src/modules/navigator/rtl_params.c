@@ -119,3 +119,113 @@ PARAM_DEFINE_FLOAT(RTL_MIN_DIST, 5.0f);
  * @group Return To Land
  */
 PARAM_DEFINE_INT32(RTL_TYPE, 0);
+
+/**
+ * home1 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H1_LAT, 0);
+
+/**
+ * home1 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H1_LON, 0);
+
+/**
+ * home1 
+ * 
+ * @group Commander
+ * 
+ */
+PARAM_DEFINE_INT32(H1_ALT, 0);
+
+/**
+ * home2 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H2_LAT, 0);
+
+/**
+ * home2 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H2_LON, 0);
+
+/**
+ * home2 
+ * 
+ * @group Commander
+ * 
+ */
+PARAM_DEFINE_INT32(H2_ALT, 0);
+
+/**
+ * home3 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H3_LAT, 0);
+
+/**
+ * home3 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H3_LON, 0);
+
+/**
+ * home3 
+ * 
+ * @group Commander
+ * 
+ */
+PARAM_DEFINE_INT32(H3_ALT, 0);
+
+/**
+ * home4 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H4_LAT, 0);
+
+/**
+ * home4 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H4_LON, 0);
+
+/**
+ * home4 
+ * 
+ * @group Commander
+ * 
+ */
+PARAM_DEFINE_INT32(H4_ALT, 0);
+
+/**
+ * home5 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H5_LAT, 0);
+
+/**
+ * home5 
+ * 
+ * @group Commander
+ */
+PARAM_DEFINE_INT32(H5_LON, 0);
+
+/**
+ * home5 
+ * 
+ * @group Commander
+ * 
+ */
+PARAM_DEFINE_INT32(H5_ALT, 0);

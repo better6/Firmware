@@ -55,6 +55,27 @@ using math::max;
 using math::min;
 
 static constexpr float DELAY_SIGMA = 0.01f;
+uint8_t h0_enable=0;
+int32_t h1_lat=0;
+int32_t h1_lon=0;
+int32_t h1_alt=0; 
+int32_t h2_lat=0;
+int32_t h2_lon=0;
+int32_t h2_alt=0;
+int32_t h3_lat=0;
+int32_t h3_lon=0;
+int32_t h3_alt=0;
+int32_t h4_lat=0;
+int32_t h4_lon=0;
+int32_t h4_alt=0;
+int32_t h5_lat=0;
+int32_t h5_lon=0;
+int32_t h5_alt=0;
+float dist1=0;
+float dist2=0;
+float dist3=0;
+float dist4=0;
+float dist5=0;
 
 RTL::RTL(Navigator *navigator) :
 	MissionBlock(navigator),
@@ -101,6 +122,35 @@ RTL::on_activation()
 		_rtl_state = RTL_STATE_RETURN;
 	}
 
+
+	h0_enable=_param_h0_enable.get();
+	
+	//注意下面这些参数只是获取了一次 没有实时获取，太占用内存资源 ，没有必要
+	h1_lat   = _param_h1_lat.get();
+	h1_lon   = _param_h1_lon.get();
+	h1_alt   = _param_h1_alt.get();
+	// double h1d_lat = h1_lat*1e-7;
+	// double h1d_lon = h1_lon*1e-7;
+	// float  h1d_alt = h1_alt;
+	//warnx("lat=%3.7f  lon=%3.7f  alt=%2.7f ",h1_lat*1e-7,h1_lon*1e-7,(double)h1_alt);
+
+
+	h2_lat   = _param_h2_lat.get();
+	h2_lon   = _param_h2_lon.get();
+	h2_alt   = _param_h2_alt.get();
+
+	h3_lat   = _param_h3_lat.get();
+	h3_lon   = _param_h3_lon.get();
+	h3_alt   = _param_h3_alt.get();
+
+	h4_lat   = _param_h4_lat.get();
+	h4_lon   = _param_h4_lon.get();
+	h4_alt   = _param_h4_alt.get();
+
+	h5_lat   = _param_h5_lat.get();
+	h5_lon   = _param_h5_lon.get();
+	h5_alt   = _param_h5_alt.get();
+
 	//根据不同的状态机 初始化设置不同的期望航点信息
 	set_rtl_item();
 }
@@ -111,6 +161,9 @@ RTL::on_activation()
 void
 RTL::on_active()
 {
+	//这个参数实时获取
+	h0_enable=_param_h0_enable.get();
+
 	if (_rtl_state != RTL_STATE_LANDED && is_mission_item_reached()) {
 		//当rtl还没有落地RTL_STATE_LANDED（还没有结束的时候），当前状态达到后就继续下一阶段的执行
 		advance_rtl();
@@ -152,9 +205,14 @@ RTL::set_rtl_item()
 
 	//获取home点的位置
 	//可全局搜索HOME点来源一 返航主要返航到HOME点，home点来源与哪
-	const home_position_s &home = *_navigator->get_home_position();
+	 home_position_s &home = *_navigator->get_home_position();
 	//获取gps坐标
 	const vehicle_global_position_s &gpos = *_navigator->get_global_position();
+
+	//开启了备选降落点
+	if(h0_enable==1){
+
+	}
 	//获取航点信息
 	position_setpoint_triplet_s *pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 
@@ -175,6 +233,38 @@ RTL::set_rtl_item()
 	// compute the loiter altitude
 	//盘旋高度
 	const float loiter_altitude = min(home.alt + _param_descend_alt.get(), gpos.alt);
+
+
+		
+
+
+	
+
+
+//	 get_distance_to_next_waypoint(gpos.lat, gpos.lon, _mission_item.lat, _mission_item.lon);
+	dist1=get_distance_to_next_waypoint(123.1234567, 123.1234567, h1_lat*1e-7, h1_lon*1e-7);
+	dist2=get_distance_to_next_waypoint(123.1234567, 123.1234567, h2_lat*1e-7, h2_lon*1e-7);
+	dist3=get_distance_to_next_waypoint(123.1234567, 123.1234567, h3_lat*1e-7, h3_lon*1e-7);
+	dist4=get_distance_to_next_waypoint(123.1234567, 123.1234567, h4_lat*1e-7, h4_lon*1e-7);
+	dist5=get_distance_to_next_waypoint(123.1234567, 123.1234567, h5_lat*1e-7, h5_lon*1e-7);
+
+	warnx("dist1 = %6.6f",(double)dist1);
+	warnx("dist2 = %6.6f",(double)dist2);
+	warnx("dist3 = %6.6f",(double)dist3);
+	warnx("dist4 = %6.6f",(double)dist4);
+	warnx("dist5 = %6.6f",(double)dist5);
+
+	float range=dist1;
+	uint8_t point=0;
+
+	if(range > dist2){  range=dist2; point=2; home.lat=(double)(h2_lat*1e-7);  home.lon=(double)(h2_lon*1e-7);  home.alt=(float)(h2_alt);}
+	else             {  range=dist1; point=1; home.lat=h1_lat*1e-7;  home.lon=h1_lon*1e-7;  home.alt=h1_alt;}
+	if(range > dist3){  range=dist3; point=3; home.lat=h3_lat*1e-7;  home.lon=h3_lon*1e-7;  home.alt=h3_alt;}
+	if(range > dist4){  range=dist4; point=4; home.lat=h4_lat*1e-7;  home.lon=h4_lon*1e-7;  home.alt=h4_alt;}
+	if(range > dist5){  range=dist5; point=5; home.lat=h5_lat*1e-7;  home.lon=h5_lon*1e-7;  home.alt=h5_alt;}
+	warnx("point=%d",point);
+
+
 
 
 	//上面都是在进行初始化取参数，

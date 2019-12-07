@@ -64,7 +64,7 @@
 #include <dataman/dataman.h>
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_tone_alarm.h>
-#include <lib/ecl/geo/geo.h>
+#include <lib/ecl/geo/geo.h> //地理函数的使用
 #include <mathlib/mathlib.h>
 #include <navigator/navigation.h>
 #include <px4_config.h>
@@ -1092,19 +1092,27 @@ Commander::handle_command(vehicle_status_s *status_local, const vehicle_command_
 * @brief This function initializes the home position an altitude of the vehicle. This happens first time we get a good GPS fix and each
 *		 time the vehicle is armed with a good GPS fix.
 **/
+
+//home点的设置，发生在第一次gps有效时或者每次解锁（gps有效时）会进行home点的设置，怎么设置呢
+//第三个参数set_alt_only_to_lpos_ref 使用本地位置local进行home点的高度设置
 bool
 Commander::set_home_position(orb_advert_t &homePub, home_position_s &home, bool set_alt_only_to_lpos_ref)
 {
+	//获取当前local位置信息
 	const vehicle_local_position_s &localPosition = _local_position_sub.get();
+	//获取当前global位置信息
 	const vehicle_global_position_s &globalPosition = _global_position_sub.get();
 
+	//不使用local高度进行home高度设置
 	if (!set_alt_only_to_lpos_ref) {
 		//Need global and local position fix to be able to set home
+		//需要全球和本地位置都有效 才能够设置home点
 		if (!status_flags.condition_global_position_valid || !status_flags.condition_local_position_valid) {
 			return false;
 		}
 
 		//Ensure that the GPS accuracy is good enough for intializing home
+		//还需要当gps精度足够好的时候才能设置home点
 		if (globalPosition.eph > _home_eph_threshold.get() || globalPosition.epv > _home_epv_threshold.get()) {
 			return false;
 		}
@@ -1133,6 +1141,7 @@ Commander::set_home_position(orb_advert_t &homePub, home_position_s &home, bool 
 
 	} else if (!home.valid_alt && localPosition.z_global) {
 		// handle special case where we are setting only altitude using local position reference
+		//处理特殊情况 我们使用本地位置进行home点高度设置
 		home.alt = localPosition.ref_alt;
 		home.valid_alt = true;
 
@@ -1198,21 +1207,21 @@ Commander::run()
 	param_t _param_flight_uuid = param_find("COM_FLIGHT_UUID");
 	param_t _param_takeoff_finished_action = param_find("COM_TAKEOFF_ACT");
 
-	param_t _param_h1_lat = param_find("H1_LAT");
-	param_t _param_h1_lon = param_find("H1_LON");
-	param_t _param_h1_alt = param_find("H1_ALT");
-	param_t _param_h2_lat = param_find("H2_LAT");
-	param_t _param_h2_lon = param_find("H2_LON");
-	param_t _param_h2_alt = param_find("H2_ALT");
-	param_t _param_h3_lat = param_find("H3_LAT");
-	param_t _param_h3_lon = param_find("H3_LON");
-	param_t _param_h3_alt = param_find("H3_ALT");
-	param_t _param_h4_lat = param_find("H4_LAT");
-	param_t _param_h4_lon = param_find("H4_LON");
-	param_t _param_h4_alt = param_find("H4_ALT");
-	param_t _param_h5_lat = param_find("H5_LAT");
-	param_t _param_h5_lon = param_find("H5_LON");
-	param_t _param_h5_alt = param_find("H5_ALT");
+	// param_t _param_h1_lat = param_find("H1_LAT");
+	// param_t _param_h1_lon = param_find("H1_LON");
+	// param_t _param_h1_alt = param_find("H1_ALT");
+	// param_t _param_h2_lat = param_find("H2_LAT");
+	// param_t _param_h2_lon = param_find("H2_LON");
+	// param_t _param_h2_alt = param_find("H2_ALT");
+	// param_t _param_h3_lat = param_find("H3_LAT");
+	// param_t _param_h3_lon = param_find("H3_LON");
+	// param_t _param_h3_alt = param_find("H3_ALT");
+	// param_t _param_h4_lat = param_find("H4_LAT");
+	// param_t _param_h4_lon = param_find("H4_LON");
+	// param_t _param_h4_alt = param_find("H4_ALT");
+	// param_t _param_h5_lat = param_find("H5_LAT");
+	// param_t _param_h5_lon = param_find("H5_LON");
+	// param_t _param_h5_alt = param_find("H5_ALT");
 	param_t _param_h0_enable = param_find("H0_ENABLE");
 	param_t _param_h0_vol = param_find("H0_VOL");
 
@@ -1464,21 +1473,21 @@ Commander::run()
 
 	int32_t takeoff_complete_act = 0;
 
-	int32_t h1_lat=0;
-	int32_t h1_lon=0;
-	int32_t h1_alt=0;
-	int32_t h2_lat=0;
-	int32_t h2_lon=0;
-	int32_t h2_alt=0;
-	int32_t h3_lat=0;
-	int32_t h3_lon=0;
-	int32_t h3_alt=0;
-	int32_t h4_lat=0;
-	int32_t h4_lon=0;
-	int32_t h4_alt=0;
-	int32_t h5_lat=0;
-	int32_t h5_lon=0;
-	int32_t h5_alt=0;
+	// int32_t h1_lat=0;
+	// int32_t h1_lon=0;
+	// int32_t h1_alt=0;
+	// int32_t h2_lat=0;
+	// int32_t h2_lon=0;
+	// int32_t h2_alt=0;
+	// int32_t h3_lat=0;
+	// int32_t h3_lon=0;
+	// int32_t h3_alt=0;
+	// int32_t h4_lat=0;
+	// int32_t h4_lon=0;
+	// int32_t h4_alt=0;
+	// int32_t h5_lat=0;
+	// int32_t h5_lon=0;
+	// int32_t h5_alt=0;
 	int32_t h0_enable=0;
 	float   h0_vol=25.2f;
 
@@ -1623,21 +1632,21 @@ Commander::run()
 
 			param_get(_param_takeoff_finished_action, &takeoff_complete_act);
 
-			param_get(_param_h1_lat, &h1_lat);
-			param_get(_param_h1_lon, &h1_lon);
-			param_get(_param_h1_alt, &h1_alt);
-			param_get(_param_h2_lat, &h2_lat);
-			param_get(_param_h2_lon, &h2_lon);
-			param_get(_param_h2_alt, &h2_alt);
-			param_get(_param_h3_lat, &h3_lat);
-			param_get(_param_h3_lon, &h3_lon);
-			param_get(_param_h3_alt, &h3_alt);
-			param_get(_param_h4_lat, &h4_lat);
-			param_get(_param_h4_lon, &h4_lon);
-			param_get(_param_h4_alt, &h4_alt);
-			param_get(_param_h5_lat, &h5_lat);
-			param_get(_param_h5_lon, &h5_lon);
-			param_get(_param_h5_alt, &h5_alt);
+			// param_get(_param_h1_lat, &h1_lat);
+			// param_get(_param_h1_lon, &h1_lon);
+			// param_get(_param_h1_alt, &h1_alt);
+			// param_get(_param_h2_lat, &h2_lat);
+			// param_get(_param_h2_lon, &h2_lon);
+			// param_get(_param_h2_alt, &h2_alt);
+			// param_get(_param_h3_lat, &h3_lat);
+			// param_get(_param_h3_lon, &h3_lon);
+			// param_get(_param_h3_alt, &h3_alt);
+			// param_get(_param_h4_lat, &h4_lat);
+			// param_get(_param_h4_lon, &h4_lon);
+			// param_get(_param_h4_alt, &h4_alt);
+			// param_get(_param_h5_lat, &h5_lat);
+			// param_get(_param_h5_lon, &h5_lon);
+			// param_get(_param_h5_alt, &h5_alt);
 			param_get(_param_h0_enable, &h0_enable);
 			param_get(_param_h0_vol, &h0_vol);
 
@@ -1991,17 +2000,44 @@ Commander::run()
 			orb_copy(ORB_ID(cpuload), cpuload_sub, &cpuload);
 		}
 
+		//电池信息
 		/* update battery status */
 		orb_check(battery_sub, &updated);
 
 		if (updated) {
 			orb_copy(ORB_ID(battery_status), battery_sub, &battery);
 
+			//当前电池的电压battery.voltage_v 但是容易波动，滤波后当前电池电压battery.voltage_filtered_v这个电压挺准的
+			static int temp=5;
+			if(h0_enable==1 && temp){ //值为1的时候开启了备降点
+				if( battery.voltage_filtered_v < h0_vol ) //当前的电压小于设置的备降点电压
+				{			
+					//当位置都有效时
+					if (status_flags.condition_global_position_valid && status_flags.condition_local_position_valid) {
+							
+						//切换rtl模式进行降落
+						if (TRANSITION_DENIED != main_state_transition(status, commander_state_s::MAIN_STATE_AUTO_RTL, status_flags, &internal_state)) {
+							
+							temp--;//累计切3次此返航模式
+							warnx("启动备选降落点进行返航");
+							//mavlink_log_emergency(&mavlink_log_pub, "启动备选降落点进行返航");
+						}
+					}
+				}					
+
+			}
+
+
+
+
+		
 			/* only consider battery voltage if system has been running 6s (usb most likely detected) and battery voltage is valid */
+			//系统已经运行6s了或者usb链接已经探测到，并且电压有效时 才开始考虑电压检测
 			if ((hrt_elapsed_time(&commander_boot_timestamp) > 6_s)
 			    && battery.voltage_filtered_v > 2.0f * FLT_EPSILON) {
-
+				
 				/* if battery voltage is getting lower, warn using buzzer, etc. */
+				//低电压时LOW
 				if (battery.warning == battery_status_s::BATTERY_WARNING_LOW &&
 				    !low_battery_voltage_actions_done) {
 
@@ -2016,15 +2052,19 @@ Commander::run()
 
 					status_changed = true;
 
+				//紧急电压CRITICAL
 				} else if (battery.warning == battery_status_s::BATTERY_WARNING_CRITICAL &&
 					   !critical_battery_voltage_actions_done) {
 
 					critical_battery_voltage_actions_done = true;
 
+					//紧急电压 还没有解锁的时候 提醒
 					if (!armed.armed) {
 						mavlink_log_critical(&mavlink_log_pub, "CRITICAL BATTERY, SHUT SYSTEM DOWN");
 
+					//紧急电压 已经解锁，设置紧急电压返航
 					} else {
+						//紧急电压 已经解锁，设置紧急电压rtl
 						if (low_bat_action == 1 || low_bat_action == 3) {
 							// let us send the critical message even if already in RTL
 							if (TRANSITION_DENIED != main_state_transition(status, commander_state_s::MAIN_STATE_AUTO_RTL, status_flags, &internal_state)) {
@@ -2034,7 +2074,7 @@ Commander::run()
 							} else {
 								mavlink_log_emergency(&mavlink_log_pub, "CRITICAL BATTERY, RTL FAILED");
 							}
-
+						//紧急电压 已经解锁，设置紧急电压land
 						} else if (low_bat_action == 2) {
 							if (TRANSITION_DENIED != main_state_transition(status, commander_state_s::MAIN_STATE_AUTO_LAND, status_flags, &internal_state)) {
 								warning_action_on = true;
@@ -2050,7 +2090,8 @@ Commander::run()
 					}
 
 					status_changed = true;
-
+				
+				//危险电压EMERGENCY
 				} else if (battery.warning == battery_status_s::BATTERY_WARNING_EMERGENCY &&
 					   !emergency_battery_voltage_actions_done) {
 
@@ -2060,7 +2101,9 @@ Commander::run()
 						// Request shutdown at the end of the cycle. This allows
 						// the vehicle state to be published after emergency landing
 						dangerous_battery_level_requests_poweroff = true;
-					} else {
+					} 
+					//危险电压立即land！！！
+					else {
 						if (low_bat_action == 2 || low_bat_action == 3) {
 							if (TRANSITION_CHANGED == main_state_transition(status, commander_state_s::MAIN_STATE_AUTO_LAND, status_flags, &internal_state)) {
 								warning_action_on = true;
