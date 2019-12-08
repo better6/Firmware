@@ -71,11 +71,11 @@ int32_t h4_alt=0;
 int32_t h5_lat=0;
 int32_t h5_lon=0;
 int32_t h5_alt=0;
-float dist1=0;
-float dist2=0;
-float dist3=0;
-float dist4=0;
-float dist5=0;
+float dist1=100000;
+float dist2=100000;
+float dist3=100000;
+float dist4=100000;
+float dist5=100000;
 float curr_vol=25.2f;
 float param_vol=11.1f;
 
@@ -226,16 +226,16 @@ RTL::set_rtl_item()
 	if((h0_enable==1) && (curr_vol<param_vol)){
 		//如果开启了备降点，会不会开启了备降点 但是正常的切换rtl 电压还没到呢，会所以在这里还要检测电压
 		//如果开启了备降点判断当前位置距离哪个近
-		dist1=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h1_lat*1e-7, h1_lon*1e-7);
-		dist2=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h2_lat*1e-7, h2_lon*1e-7);
-		dist3=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h3_lat*1e-7, h3_lon*1e-7);
-		dist4=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h4_lat*1e-7, h4_lon*1e-7);
-		dist5=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h5_lat*1e-7, h5_lon*1e-7);
-		warnx("dist1 = %6.6f",(double)dist1);
-		warnx("dist2 = %6.6f",(double)dist2);
-		warnx("dist3 = %6.6f",(double)dist3);
-		warnx("dist4 = %6.6f",(double)dist4);
-		warnx("dist5 = %6.6f",(double)dist5);
+		if(h1_lat&&h1_lon) dist1=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h1_lat*1e-7, h1_lon*1e-7);
+		if(h2_lat&&h2_lon) dist2=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h2_lat*1e-7, h2_lon*1e-7);
+		if(h3_lat&&h3_lon) dist3=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h3_lat*1e-7, h3_lon*1e-7);
+		if(h4_lat&&h4_lon) dist4=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h4_lat*1e-7, h4_lon*1e-7);
+		if(h5_lat&&h5_lon) dist5=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h5_lat*1e-7, h5_lon*1e-7);
+		// warnx("dist1 = %6.6f",(double)dist1);
+		// warnx("dist2 = %6.6f",(double)dist2);
+		// warnx("dist3 = %6.6f",(double)dist3);
+		// warnx("dist4 = %6.6f",(double)dist4);
+		// warnx("dist5 = %6.6f",(double)dist5);
 	
 		float range=dist1;
 		uint8_t point=0;

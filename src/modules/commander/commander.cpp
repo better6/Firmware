@@ -1157,6 +1157,9 @@ Commander::set_home_position(orb_advert_t &homePub, home_position_s &home, bool 
 		//可全局搜索HOME点来源四 这是飞控自动获取的home点。是怎么获取的
 		//当gps有效时，飞机的解锁点就是飞机的home这一点我好像实测过
 		orb_publish(ORB_ID(home_position), homePub, &home);
+		mavlink_and_console_log_info(&mavlink_log_pub, "当前home点坐标信息是 lat=%3.7f ",home.lat);
+		mavlink_and_console_log_info(&mavlink_log_pub, "当前home点坐标信息是 lon=%3.7f ",home.lon);
+		mavlink_and_console_log_info(&mavlink_log_pub, "当前home点坐标信息是 alt=%3.0f ",(double)home.alt);
 
 	} else {
 		homePub = orb_advertise(ORB_ID(home_position), &home);
