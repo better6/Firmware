@@ -104,7 +104,7 @@ set(config_module_list
 	modules/landing_target_estimator
 	modules/local_position_estimator
 	modules/position_estimator_inav
-	modules/wind_estimator
+	#modules/wind_estimator
 
 	#
 	# Vehicle Control
@@ -141,7 +141,7 @@ set(config_module_list
 	#
 	# Segway
 	#
-	examples/segway
+	#examples/segway
 
 	#
 	# Demo apps
