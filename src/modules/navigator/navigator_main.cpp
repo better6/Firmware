@@ -119,6 +119,14 @@ Navigator::global_position_update()
 }
 
 void
+Navigator::battery_status_update()
+{
+	orb_copy(ORB_ID(battery_status), _battery_status_sub, &_battery);
+	//实测订阅电池信息正确
+	//mavlink_log_critical(&_mavlink_log_pub, "nav=%2.4f",(double)_battery.voltage_filtered_v);
+}
+
+void
 Navigator::local_position_update()
 {
 	orb_copy(ORB_ID(vehicle_local_position), _local_pos_sub, &_local_pos);
@@ -192,6 +200,7 @@ Navigator::run()
 
 	/* do subscriptions */
 	_global_pos_sub = orb_subscribe(ORB_ID(vehicle_global_position));
+	_battery_status_sub= orb_subscribe(ORB_ID(battery_status));
 	_local_pos_sub = orb_subscribe(ORB_ID(vehicle_local_position));
 	_gps_pos_sub = orb_subscribe(ORB_ID(vehicle_gps_position));
 	_fw_pos_ctrl_status_sub = orb_subscribe(ORB_ID(fw_pos_ctrl_status));
@@ -207,6 +216,7 @@ Navigator::run()
 	vehicle_status_update();
 	vehicle_land_detected_update();
 	global_position_update();
+	battery_status_update();
 	local_position_update();
 	gps_position_update();
 	home_position_update(true);
@@ -271,6 +281,14 @@ Navigator::run()
 				have_geofence_position_data = true;
 			}
 		}
+
+		/* global position updated */
+		orb_check(_battery_status_sub, &updated);
+		if(updated){
+			battery_status_update();
+			
+		}
+		
 
 		/* parameters updated */
 		orb_check(_param_update_sub, &updated);
@@ -778,6 +796,7 @@ Navigator::run()
 	}
 
 	orb_unsubscribe(_global_pos_sub);
+	orb_unsubscribe(_battery_status_sub);	
 	orb_unsubscribe(_local_pos_sub);
 	orb_unsubscribe(_gps_pos_sub);
 	orb_unsubscribe(_fw_pos_ctrl_status_sub);

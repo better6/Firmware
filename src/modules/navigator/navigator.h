@@ -68,6 +68,7 @@
 #include <uORB/topics/vehicle_attitude_setpoint.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/vehicle_global_position.h>
+#include <uORB/topics/battery_status.h>
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_local_position.h>
@@ -152,6 +153,7 @@ public:
 	struct position_setpoint_triplet_s *get_reposition_triplet() { return &_reposition_triplet; }
 	struct position_setpoint_triplet_s *get_takeoff_triplet() { return &_takeoff_triplet; }
 	struct vehicle_global_position_s *get_global_position() { return &_global_pos; }
+	struct battery_status_s  *get_battery_status() { return &_battery; }
 	struct vehicle_land_detected_s *get_land_detected() { return &_land_detected; }
 	struct vehicle_local_position_s *get_local_position() { return &_local_pos; }
 	struct vehicle_status_s *get_vstatus() { return &_vstatus; }
@@ -273,6 +275,7 @@ public:
 private:
 	int		_fw_pos_ctrl_status_sub{-1};	/**< notification of vehicle capabilities updates */
 	int		_global_pos_sub{-1};		/**< global position subscription */
+	int		_battery_status_sub{-1};
 	int		_gps_pos_sub{-1};		/**< gps position subscription */
 	int		_home_pos_sub{-1};		/**< home position subscription */
 	int		_land_detected_sub{-1};		/**< vehicle land detected subscription */
@@ -296,6 +299,7 @@ private:
 	home_position_s					_home_pos{};		/**< home position for RTL */
 	mission_result_s				_mission_result{};
 	vehicle_global_position_s			_global_pos{};		/**< global vehicle position */
+	battery_status_s                    _battery{}; 
 	vehicle_gps_position_s				_gps_pos{};		/**< gps position */
 	vehicle_land_detected_s				_land_detected{};	/**< vehicle land_detected */
 	vehicle_local_position_s			_local_pos{};		/**< local vehicle position */
@@ -362,6 +366,7 @@ private:
 	// update subscriptions
 	void		fw_pos_ctrl_status_update(bool force = false);
 	void		global_position_update();
+	void		battery_status_update();
 	void		gps_position_update();
 	void		home_position_update(bool force = false);
 	void		local_position_update();

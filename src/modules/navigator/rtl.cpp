@@ -163,6 +163,9 @@ RTL::on_active()
 {
 	//这个参数实时获取
 	h0_enable=_param_h0_enable.get();
+	const battery_status_s &bat = *_navigator->get_battery_status();
+	//实测电池信息订阅正确	
+	mavlink_and_console_log_info(_navigator->get_mavlink_log_pub(), "bat %2.4f",(double)bat.voltage_filtered_v);
 
 	if (_rtl_state != RTL_STATE_LANDED && is_mission_item_reached()) {
 		//当rtl还没有落地RTL_STATE_LANDED（还没有结束的时候），当前状态达到后就继续下一阶段的执行

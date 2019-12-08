@@ -1660,6 +1660,10 @@ Commander::run()
 			// warnx("0: enable = %d, vol = %2.2f", h0_enable, (double)h0_vol);
 		}	
 
+		//可以通过这个修改地面站参数
+		// float a=2;
+		// param_set(_param_h0_vol, &a);
+
 		/* handle power button state */
 		orb_check(power_button_state_sub, &updated);
 
