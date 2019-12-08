@@ -76,6 +76,8 @@ float dist2=0;
 float dist3=0;
 float dist4=0;
 float dist5=0;
+float curr_vol=25.2f;
+float param_vol=11.1f;
 
 RTL::RTL(Navigator *navigator) :
 	MissionBlock(navigator),
@@ -124,6 +126,7 @@ RTL::on_activation()
 
 
 	h0_enable=_param_h0_enable.get();
+	param_vol=_param_h0_vol.get();
 	
 	//注意下面这些参数只是获取了一次 没有实时获取，太占用内存资源 ，没有必要
 	h1_lat   = _param_h1_lat.get();
@@ -163,9 +166,14 @@ RTL::on_active()
 {
 	//这个参数实时获取
 	h0_enable=_param_h0_enable.get();
+	param_vol=_param_h0_vol.get();
+
 	const battery_status_s &bat = *_navigator->get_battery_status();
 	//实测电池信息订阅正确	
 	//mavlink_and_console_log_info(_navigator->get_mavlink_log_pub(), "bat %2.4f",(double)bat.voltage_filtered_v);
+	curr_vol=bat.voltage_filtered_v;//实时电池电压
+	//实测电压参数获取正常
+	//warnx("param vol=%2.4f",(double)param_vol);
 
 	if (_rtl_state != RTL_STATE_LANDED && is_mission_item_reached()) {
 		//当rtl还没有落地RTL_STATE_LANDED（还没有结束的时候），当前状态达到后就继续下一阶段的执行
@@ -212,8 +220,10 @@ RTL::set_rtl_item()
 	//获取gps坐标
 	const vehicle_global_position_s &gpos = *_navigator->get_global_position();
 
-	//开启了备选降落点
-	if(h0_enable==1){
+	
+
+	//开启了备选降落点，并且当前电压小于参数电压时 开始备降点返航
+	if((h0_enable==1) && (curr_vol<param_vol)){
 		//如果开启了备降点，会不会开启了备降点 但是正常的切换rtl 电压还没到呢，会所以在这里还要检测电压
 		//如果开启了备降点判断当前位置距离哪个近
 		dist1=get_distance_to_next_waypoint(gpos.lat, gpos.lon, h1_lat*1e-7, h1_lon*1e-7);
@@ -230,12 +240,12 @@ RTL::set_rtl_item()
 		float range=dist1;
 		uint8_t point=0;
 
-		if(range > dist2){  range=dist2; point=2; home.lat=(double)(h2_lat*1e-7);  home.lon=(double)(h2_lon*1e-7);  home.alt=(float)(h2_alt);}
+		if(range > dist2){  range=dist2; point=2; home.lat=h2_lat*1e-7;  home.lon=h2_lon*1e-7;  home.alt=h2_alt;}
 		else             {  range=dist1; point=1; home.lat=h1_lat*1e-7;  home.lon=h1_lon*1e-7;  home.alt=h1_alt;}
 		if(range > dist3){  range=dist3; point=3; home.lat=h3_lat*1e-7;  home.lon=h3_lon*1e-7;  home.alt=h3_alt;}
 		if(range > dist4){  range=dist4; point=4; home.lat=h4_lat*1e-7;  home.lon=h4_lon*1e-7;  home.alt=h4_alt;}
 		if(range > dist5){  range=dist5; point=5; home.lat=h5_lat*1e-7;  home.lon=h5_lon*1e-7;  home.alt=h5_alt;}
-		warnx("point=%d",point);
+		//warnx("point=%d",point);
 		mavlink_and_console_log_info(_navigator->get_mavlink_log_pub(), "#低电压返航降落到%d号备降点",point);
 	
 	}
@@ -259,22 +269,7 @@ RTL::set_rtl_item()
 	// compute the loiter altitude
 	//盘旋高度
 	const float loiter_altitude = min(home.alt + _param_descend_alt.get(), gpos.alt);
-
-
-		
-
-
 	
-
-
-//	 get_distance_to_next_waypoint(gpos.lat, gpos.lon, _mission_item.lat, _mission_item.lon);
-
-
-	
-
-
-
-
 	//上面都是在进行初始化取参数，
 	//下面开始根据状态机进行动作
 	// //	enum RTLState {

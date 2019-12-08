@@ -792,4 +792,4 @@ PARAM_DEFINE_INT32(H0_ENABLE, 0); //0关闭 1开启
  * @decimal 2
  * @increment 0.01
  */
-PARAM_DEFINE_FLOAT(H0_VOL, 25.2f);
+PARAM_DEFINE_FLOAT(H0_VOL, 11.1f);

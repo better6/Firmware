@@ -99,6 +99,7 @@ private:
 		(ParamFloat<px4::params::RTL_MIN_DIST>) _param_rtl_min_dist,
 		(ParamInt<px4::params::RTL_TYPE>) _param_rtl_type,
 		(ParamInt<px4::params::H0_ENABLE>) _param_h0_enable,
+		(ParamFloat<px4::params::H0_VOL>) _param_h0_vol,
 		(ParamInt<px4::params::H1_LAT>) _param_h1_lat,
 		(ParamInt<px4::params::H1_LON>) _param_h1_lon,
 		(ParamInt<px4::params::H1_ALT>) _param_h1_alt,
