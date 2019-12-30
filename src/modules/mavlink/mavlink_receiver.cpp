@@ -304,6 +304,8 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 		break;
 	
 	//可全局搜索自定义FOLLOW_ME 四，从机接收主机发送过来的跟随位置信息
+	//实践验证 接收自定义的mavlink消息只需要在这里添加case进行处理即可，没有额外需要处理的地方
+	//如果接收不到 可能是因为双方定义的协议不一致
 	case MAVLINK_MSG_ID_FOLLOW_ME:
         handle_message_follow_me(msg);
         break;	
@@ -358,11 +360,15 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 	
 //下面都是自己定义的MAVLINK消息了
 	//处理红杏地面站发给我的编队信息
+	//实践验证 接收自定义的mavlink消息只需要在这里添加case进行处理即可，没有额外需要处理的地方
+	//如果接收不到 可能是因为双方定义的协议不一致
 	case MAVLINK_MSG_ID_FORMATION_TYPE:
         handle_message_formation_type(msg);
         break;
 
 	//这是红杏地面站发给我的故障设置
+	//实践验证 接收自定义的mavlink消息只需要在这里添加case进行处理即可，没有额外需要处理的地方
+	//如果接收不到 可能是因为双方定义的协议不一致
 	case MAVLINK_MSG_ID_FAULT_COMMAND:
         handle_message_fault_command(msg);
         break;		
@@ -2518,6 +2524,18 @@ void MavlinkReceiver::handle_message_formation_type(mavlink_message_t *msg)
 //增加的自定义mavlink数据接收
 void MavlinkReceiver::handle_message_fault_command(mavlink_message_t *msg)
 {
+	//接收处理mavlink消息，仿真测试接收数据正常
+	mavlink_fault_command_t  _mav_fault;
+	mavlink_msg_fault_command_decode(msg, &_mav_fault);
+
+	//instruct[0]用于区分地面站发送的数据，0默认无意义 1有效发送的是pwm故障数据  2发送的传感器数据  3发送的全部数据
+	//motor_ratio[6]代表pwm故障率  motor_time[6]pwm故障持续时间
+	//sensor_ratio[10]代表传感器故障率  sensor_time[10]传感器故障持续时间
+
+
+
+
+
 
 }
 
