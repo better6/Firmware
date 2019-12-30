@@ -79,6 +79,7 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/vehicle_control_mode.h>
+#include <uORB/topics/sensor_fault.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/differential_pressure.h>
@@ -166,6 +167,7 @@ private:
 	int		_actuator_ctrl_0_sub{-1};		/**< attitude controls sub */
 	int		_diff_pres_sub{-1};			/**< raw differential pressure subscription */
 	int		_vcontrol_mode_sub{-1};		/**< vehicle control mode subscription */
+	int		_sensor_fault_sub{-1};
 	int 		_params_sub{-1};			/**< notification of parameter updates */
 
 	orb_advert_t	_sensor_pub{nullptr};			/**< combined sensor data topic */
@@ -592,6 +594,7 @@ Sensors::run()
 	vehicle_magnetometer_s magnetometer = {};
 
 	struct sensor_preflight_s preflt = {};
+	struct sensor_fault_s _sensor_fault={};
 
 	_rc_update.init();
 
@@ -606,6 +609,8 @@ Sensors::run()
 	_diff_pres_sub = orb_subscribe(ORB_ID(differential_pressure));
 
 	_vcontrol_mode_sub = orb_subscribe(ORB_ID(vehicle_control_mode));
+
+	_sensor_fault_sub = orb_subscribe(ORB_ID(sensor_fault));
 
 	_params_sub = orb_subscribe(ORB_ID(parameter_update));
 
@@ -669,6 +674,14 @@ Sensors::run()
 		/* check vehicle status for changes to publication state */
 		vehicle_control_mode_poll();
 
+		//判断传感器故障数据有没有更新
+		bool sensor_updated=false;
+		orb_check(_sensor_fault_sub, &sensor_updated);
+		if (sensor_updated) { 
+			//仿真测试 数据接收正常
+			orb_copy(ORB_ID(sensor_fault), _sensor_fault_sub, &_sensor_fault); 
+		}
+
 		/* the timestamp of the raw struct is updated by the gyro_poll() method (this makes the gyro
 		 * a mandatory sensor) */
 		const uint64_t airdata_prev_timestamp = airdata.timestamp;
@@ -685,6 +698,7 @@ Sensors::run()
 
 			_voted_sensors_update.set_relative_timestamps(raw);
 
+			//传感器故障注入
 			orb_publish(ORB_ID(sensor_combined), _sensor_pub, &raw);
 
 			if (airdata.timestamp != airdata_prev_timestamp) {
