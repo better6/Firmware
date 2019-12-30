@@ -2533,9 +2533,73 @@ void MavlinkReceiver::handle_message_fault_command(mavlink_message_t *msg)
 	//sensor_ratio[10]代表传感器故障率  sensor_time[10]传感器故障持续时间
 
 
+	sensor_fault_s _sensor = {};
 
+	motor_fault_s  _motor ={};
+	
+	_sensor.timestamp = hrt_absolute_time();
+	_motor.timestamp = hrt_absolute_time();
 
+	//传感器故障
+	_sensor.sensor_ratio[0]=_mav_fault.sensor_ratio[0];
+	_sensor.sensor_ratio[1]=_mav_fault.sensor_ratio[1];
+	_sensor.sensor_ratio[2]=_mav_fault.sensor_ratio[2];
+	_sensor.sensor_ratio[3]=_mav_fault.sensor_ratio[3];
+	_sensor.sensor_ratio[4]=_mav_fault.sensor_ratio[4];
+	_sensor.sensor_ratio[5]=_mav_fault.sensor_ratio[5];
+	_sensor.sensor_ratio[6]=_mav_fault.sensor_ratio[6];
+	_sensor.sensor_ratio[7]=_mav_fault.sensor_ratio[7];
+	_sensor.sensor_ratio[8]=_mav_fault.sensor_ratio[8];
+	_sensor.sensor_ratio[9]=_mav_fault.sensor_ratio[9];
 
+	_sensor.sensor_time[0]=_mav_fault.sensor_time[0];
+	_sensor.sensor_time[1]=_mav_fault.sensor_time[1];
+	_sensor.sensor_time[2]=_mav_fault.sensor_time[2];
+	_sensor.sensor_time[3]=_mav_fault.sensor_time[3];
+	_sensor.sensor_time[4]=_mav_fault.sensor_time[4];
+	_sensor.sensor_time[5]=_mav_fault.sensor_time[5];
+	_sensor.sensor_time[6]=_mav_fault.sensor_time[6];
+	_sensor.sensor_time[7]=_mav_fault.sensor_time[7];
+	_sensor.sensor_time[8]=_mav_fault.sensor_time[8];
+	_sensor.sensor_time[9]=_mav_fault.sensor_time[9];
+
+	//pwm故障
+	_motor.motor_ratio[0]=_mav_fault.motor_ratio[0];
+	_motor.motor_ratio[1]=_mav_fault.motor_ratio[1];
+	_motor.motor_ratio[2]=_mav_fault.motor_ratio[2];
+	_motor.motor_ratio[3]=_mav_fault.motor_ratio[3];
+	_motor.motor_ratio[4]=_mav_fault.motor_ratio[4];
+	_motor.motor_ratio[5]=_mav_fault.motor_ratio[5];
+
+	_motor.motor_time[0]=_mav_fault.motor_time[0];
+	_motor.motor_time[1]=_mav_fault.motor_time[1];
+	_motor.motor_time[2]=_mav_fault.motor_time[2];
+	_motor.motor_time[3]=_mav_fault.motor_time[3];
+	_motor.motor_time[4]=_mav_fault.motor_time[4];
+	_motor.motor_time[5]=_mav_fault.motor_time[5];
+
+	if(_mav_fault.instruct[0]==2 || _mav_fault.instruct[0]==3){
+		//1有效发送的是pwm故障数据  2发送的传感器数据  3发送的全部数据
+		if (_sensor_fault_pub == nullptr) {
+			_sensor_fault_pub = orb_advertise(ORB_ID(sensor_fault), &_sensor);
+
+		} else {
+			orb_publish(ORB_ID(sensor_fault), _sensor_fault_pub, &_sensor);
+		}
+		//warnx("sensor = %d",_mav_fault.instruct[0]);
+
+	}
+
+	if(_mav_fault.instruct[0]==1 || _mav_fault.instruct[0]==3){
+	//1有效发送的是pwm故障数据  2发送的传感器数据  3发送的全部数据
+		if (_motor_fault_pub == nullptr) {
+			_motor_fault_pub = orb_advertise(ORB_ID(motor_fault), &_motor);
+
+		} else {
+			orb_publish(ORB_ID(motor_fault), _motor_fault_pub, &_motor);
+		}
+		//warnx("motor = %d",_mav_fault.instruct[0]);
+	}
 
 }
 

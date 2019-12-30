@@ -81,6 +81,8 @@
 #include <uORB/topics/vehicle_rates_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/formation_type.h>
+#include <uORB/topics/sensor_fault.h>
+#include <uORB/topics/motor_fault.h>
 
 #include "mavlink_ftp.h"
 #include "mavlink_log_handler.h"
@@ -248,6 +250,8 @@ private:
 	orb_advert_t _debug_value_pub;
 	orb_advert_t _debug_vect_pub;
 	orb_advert_t _formation_pub;
+	orb_advert_t _sensor_fault_pub;
+	orb_advert_t _motor_fault_pub;
 	static const int _gps_inject_data_queue_size = 6;
 	orb_advert_t _gps_inject_data_pub;
 	orb_advert_t _command_ack_pub;

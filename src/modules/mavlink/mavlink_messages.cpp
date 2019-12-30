@@ -612,6 +612,8 @@ protected:
 };
 
 
+//地面站显示的传感器数据，数据来源sensor_combined
+
 class MavlinkStreamHighresIMU : public MavlinkStream
 {
 public:

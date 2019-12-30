@@ -131,6 +131,8 @@ set(msg_files
 	vtol_vehicle_status.msg
 	wind_estimate.msg
 	formation_type.msg
+	sensor_fault.msg
+	motor_fault.msg
 	)
 
 if(NOT EXTERNAL_MODULES_LOCATION STREQUAL "")
