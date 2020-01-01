@@ -674,12 +674,15 @@ Sensors::run()
 		/* check vehicle status for changes to publication state */
 		vehicle_control_mode_poll();
 
-		//判断传感器故障数据有没有更新
+		//可全局搜索传感器故障注入二
 		bool sensor_updated=false;
 		orb_check(_sensor_fault_sub, &sensor_updated);
 		if (sensor_updated) { 
 			//仿真测试 数据接收正常
 			orb_copy(ORB_ID(sensor_fault), _sensor_fault_sub, &_sensor_fault); 
+			// fault_update=true;
+			// fault_time = hrt_absolute_time();
+			// sensor_updated=false;
 		}
 
 		/* the timestamp of the raw struct is updated by the gyro_poll() method (this makes the gyro
@@ -698,13 +701,20 @@ Sensors::run()
 
 			_voted_sensors_update.set_relative_timestamps(raw);
 
-			//传感器故障注入
+			//可全局搜索传感器故障注入三
+			
+			//加速度 陀螺仪故障注入
+			//故障有更新 故障时间大于1 并且故障时间还没结束
+
+	
+			
 			orb_publish(ORB_ID(sensor_combined), _sensor_pub, &raw);
 
 			if (airdata.timestamp != airdata_prev_timestamp) {
 				orb_publish(ORB_ID(vehicle_air_data), _airdata_pub, &airdata);
 			}
 
+			//磁力计故障注入
 			if (magnetometer.timestamp != magnetometer_prev_timestamp) {
 				orb_publish(ORB_ID(vehicle_magnetometer), _magnetometer_pub, &magnetometer);
 			}
