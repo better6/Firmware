@@ -124,7 +124,7 @@ using namespace sensors;
  */
 #define PCB_TEMP_ESTIMATE_DEG		5.0f
 #define STICK_ON_OFF_LIMIT		0.75f
-
+#define TIME_CONVERSION 		1000*1000
 /**
  * Sensor app start / stop handling function
  *
@@ -643,6 +643,7 @@ Sensors::run()
 	poll_fds.events = POLLIN;
 
 	uint64_t last_config_update = hrt_absolute_time();
+	uint64_t fault_time = hrt_absolute_time();//用于记录接收到地面站故障数据时的时间，
 
 	while (!should_exit()) {
 
@@ -680,9 +681,7 @@ Sensors::run()
 		if (sensor_updated) { 
 			//已经make posix jmavsim仿真测试，接收qgc故障注入的数据正常。
 			orb_copy(ORB_ID(sensor_fault), _sensor_fault_sub, &_sensor_fault); 
-			// fault_update=true;
-			// fault_time = hrt_absolute_time();
-			// sensor_updated=false;
+			fault_time = hrt_absolute_time();//故障注入时的时间
 		}
 
 		/* the timestamp of the raw struct is updated by the gyro_poll() method (this makes the gyro
@@ -705,9 +704,37 @@ Sensors::run()
 			
 			//加速度 陀螺仪故障注入
 			//故障有更新 故障时间大于1 并且故障时间还没结束
-
-	
-			
+			uint64_t now = hrt_absolute_time();//现在的时间，这是在一个循环里 要用循环动态的眼光思考程序的运行
+			uint64_t dt  = now - fault_time;
+			//地面站进行传感器和执行器的故障注入，故障信息包括故障率和故障持续时间，目前地面站故障持续时间单位s需要转换为us
+			//now-fault_time 不会进入到下面的条件语句里，当设置了故障时才会有限时间的进入下面的故障发生
+			//已经仿真测试 以下故障率和故障时间可用
+			if(dt < _sensor_fault.sensor_time[0]*TIME_CONVERSION) //x轴加速度故障注入
+			{
+				raw.accelerometer_m_s2[0]=raw.accelerometer_m_s2[0]*_sensor_fault.sensor_ratio[0];
+			}
+			if(dt < _sensor_fault.sensor_time[1]*TIME_CONVERSION) //y轴加速度故障注入
+			{
+				raw.accelerometer_m_s2[1]=raw.accelerometer_m_s2[1]*_sensor_fault.sensor_ratio[1];
+			}
+			if(dt < _sensor_fault.sensor_time[2]*TIME_CONVERSION) //z轴加速度故障注入
+			{
+				raw.accelerometer_m_s2[2]=raw.accelerometer_m_s2[2]*_sensor_fault.sensor_ratio[2];
+			}
+			//陀螺仪加速度故障注入
+			if(dt < _sensor_fault.sensor_time[3]*TIME_CONVERSION) //x轴陀螺仪故障注入
+			{
+				raw.gyro_rad[0]=raw.gyro_rad[0]*_sensor_fault.sensor_ratio[3];
+			}
+			if(dt < _sensor_fault.sensor_time[4]*TIME_CONVERSION) //y轴陀螺仪故障注入
+			{
+				raw.gyro_rad[1]=raw.gyro_rad[1]*_sensor_fault.sensor_ratio[4];
+			}
+			if(dt < _sensor_fault.sensor_time[5]*TIME_CONVERSION) //z轴陀螺仪故障注入
+			{
+				raw.gyro_rad[2]=raw.gyro_rad[2]*_sensor_fault.sensor_ratio[5];
+			}
+				
 			orb_publish(ORB_ID(sensor_combined), _sensor_pub, &raw);
 
 			if (airdata.timestamp != airdata_prev_timestamp) {
@@ -715,6 +742,19 @@ Sensors::run()
 			}
 
 			//磁力计故障注入
+			if(dt < _sensor_fault.sensor_time[6]*TIME_CONVERSION) //x轴磁力计故障注入
+			{
+				magnetometer.magnetometer_ga[0]=magnetometer.magnetometer_ga[0]*_sensor_fault.sensor_ratio[6];
+			}
+			if(dt < _sensor_fault.sensor_time[7]*TIME_CONVERSION) //y轴磁力计故障注入
+			{
+				magnetometer.magnetometer_ga[1]=magnetometer.magnetometer_ga[1]*_sensor_fault.sensor_ratio[7];
+			}
+			if(dt < _sensor_fault.sensor_time[8]*TIME_CONVERSION) //z轴磁力计故障注入
+			{
+				magnetometer.magnetometer_ga[2]=magnetometer.magnetometer_ga[2]*_sensor_fault.sensor_ratio[8];
+			}
+
 			if (magnetometer.timestamp != magnetometer_prev_timestamp) {
 				orb_publish(ORB_ID(vehicle_magnetometer), _magnetometer_pub, &magnetometer);
 			}
