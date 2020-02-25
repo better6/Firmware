@@ -678,7 +678,7 @@ Sensors::run()
 		bool sensor_updated=false;
 		orb_check(_sensor_fault_sub, &sensor_updated);
 		if (sensor_updated) { 
-			//仿真测试 数据接收正常
+			//已经make posix jmavsim仿真测试，接收qgc故障注入的数据正常。
 			orb_copy(ORB_ID(sensor_fault), _sensor_fault_sub, &_sensor_fault); 
 			// fault_update=true;
 			// fault_time = hrt_absolute_time();
