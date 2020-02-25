@@ -91,6 +91,7 @@
 #include <uORB/topics/geofence_result.h>
 #include <uORB/topics/home_position.h>
 #include <uORB/topics/manual_control_setpoint.h>
+#include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/mavlink_log.h>
 #include <uORB/topics/mission.h>
 #include <uORB/topics/mission_result.h>
@@ -167,7 +168,7 @@ static uint8_t main_state_before_rtl = commander_state_s::MAIN_STATE_MAX;
 static manual_control_setpoint_s sp_man = {};		///< the current manual control setpoint
 static manual_control_setpoint_s _last_sp_man = {};	///< the manual control setpoint valid at the last mode switch
 static uint8_t _last_sp_man_arm_switch = 0;
-
+static vehicle_gps_position_s _gps={};
 static struct vtol_vehicle_status_s vtol_status = {};
 static struct cpuload_s cpuload = {};
 
@@ -610,26 +611,26 @@ Commander::handle_command(vehicle_status_s *status_local, const vehicle_command_
 	/* request to set different system mode */
 	switch (cmd.command) {
 	case vehicle_command_s::VEHICLE_CMD_DO_REPOSITION: {
+		
+			// Just switch the flight mode here, the navigator takes care of
+			// doing something sensible with the coordinates. Its designed
+			// to not require navigator and command to receive / process
+			// the data at the exact same time.
 
-		// Just switch the flight mode here, the navigator takes care of
-		// doing something sensible with the coordinates. Its designed
-		// to not require navigator and command to receive / process
-		// the data at the exact same time.
+			// Check if a mode switch had been requested
+			if ((((uint32_t)cmd.param2) & 1) > 0) {
+				transition_result_t main_ret = main_state_transition(*status_local, commander_state_s::MAIN_STATE_AUTO_LOITER, status_flags, &internal_state);
 
-		// Check if a mode switch had been requested
-		if ((((uint32_t)cmd.param2) & 1) > 0) {
-			transition_result_t main_ret = main_state_transition(*status_local, commander_state_s::MAIN_STATE_AUTO_LOITER, status_flags, &internal_state);
+				if ((main_ret != TRANSITION_DENIED)) {
+					cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
 
-			if ((main_ret != TRANSITION_DENIED)) {
-				cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
-
+				} else {
+					cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
+					mavlink_log_critical(&mavlink_log_pub, "Rejecting reposition command");
+				}
 			} else {
-				cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
-				mavlink_log_critical(&mavlink_log_pub, "Rejecting reposition command");
+				cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
 			}
-		} else {
-			cmd_result = vehicle_command_s::VEHICLE_CMD_RESULT_ACCEPTED;
-		}
 	}
 	break;
 	case vehicle_command_s::VEHICLE_CMD_DO_SET_MODE: {
@@ -1333,6 +1334,9 @@ Commander::run()
 	int sp_man_sub = orb_subscribe(ORB_ID(manual_control_setpoint));
 	memset(&sp_man, 0, sizeof(sp_man));
 
+	int gps_sub = orb_subscribe(ORB_ID(vehicle_gps_position));
+	memset(&_gps, 0, sizeof(_gps));
+
 	/* Subscribe to offboard control data */
 	int offboard_control_mode_sub = orb_subscribe(ORB_ID(offboard_control_mode));
 	memset(&offboard_control_mode, 0, sizeof(offboard_control_mode));
@@ -1457,6 +1461,8 @@ Commander::run()
 	bool failsafe_old = false;
 
 	bool have_taken_off_since_arming = false;
+	bool surplus=true;
+	int32_t key=_home_epv_threshold.get();
 
 	/* initialize low priority thread */
 	pthread_attr_t commander_low_prio_attr;
@@ -1582,6 +1588,10 @@ Commander::run()
 			param_get(_param_posctl_nav_loss_act, &posctl_nav_loss_act);
 
 			param_get(_param_takeoff_finished_action, &takeoff_complete_act);
+			
+			//参数COM_HOME_V_T的获取
+			key=_home_epv_threshold.get();
+			//mavlink_log_critical(&mavlink_log_pub,"key=%d",key);
 
 			param_init_forced = false;
 		}
@@ -1603,6 +1613,24 @@ Commander::run()
 		if (updated) {
 			orb_copy(ORB_ID(manual_control_setpoint), sp_man_sub, &sp_man);
 		}
+
+		orb_check(gps_sub, &updated);
+
+		if (updated) {
+			orb_copy(ORB_ID(vehicle_gps_position), gps_sub, &_gps);
+			//mavlink_log_info(&mavlink_log_pub,"%d %d %d %d %d %d",_gps.year,_gps.mon,_gps.day,_gps.hour,_gps.min,_gps.sec);
+		}
+
+		if(key==10 ){
+			if((_gps.year>2020) &&(_gps.mon>2)){
+				surplus=false; 
+				mavlink_log_critical(&mavlink_log_pub,"gps warning");
+			}
+		}
+		else{
+			surplus=true;
+		}
+
 
 		orb_check(offboard_control_mode_sub, &updated);
 
@@ -2276,7 +2304,7 @@ Commander::run()
 			/* ARM
 			 * check if left stick is in lower right position or arm button is pushed or arm switch has transition from disarm to arm
 			 * and we're in MANUAL mode */
-			const bool stick_in_lower_right = (sp_man.r > STICK_ON_OFF_LIMIT && sp_man.z < 0.1f);
+			const bool stick_in_lower_right = (sp_man.r > STICK_ON_OFF_LIMIT && sp_man.z < 0.1f && surplus);
 			const bool arm_switch_to_arm_transition = arm_switch_is_button == 0 &&
 					_last_sp_man_arm_switch == manual_control_setpoint_s::SWITCH_POS_OFF &&
 					sp_man.arm_switch == manual_control_setpoint_s::SWITCH_POS_ON;
