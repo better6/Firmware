@@ -2591,8 +2591,9 @@ void MavlinkReceiver::handle_message_fault_command(mavlink_message_t *msg)
 
 	}
 
+	//可全局搜索执行器故障注入一
 	if(_mav_fault.instruct[0]==1 || _mav_fault.instruct[0]==3){
-	//1有效发送的是pwm故障数据  2发送的传感器数据  3发送的全部数据
+	//1发送的是pwm故障数据  2发送的传感器数据  3发送的全部数据
 		if (_motor_fault_pub == nullptr) {
 			_motor_fault_pub = orb_advertise(ORB_ID(motor_fault), &_motor);
 
