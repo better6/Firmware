@@ -295,11 +295,18 @@ mixer_tick(void)
 			mixer_group.set_thrust_factor(REG_TO_FLOAT(r_setup_thr_fac));
 			update_mc_thrust_param = false;
 		}
+		
+		//循环执行计算pwm
+		//r_rc_values[]数组在px4io.h中定义，里面[0][1][2][3]这些放的是遥控器通道0 1 2 3的数据
 
 		/* mix */
+		//这是混控脚本quad_x.main.mix几个”S“混控计算得到一个”O“的地方，下面outputs[]就是存放的混控结果【-1，+1】，还没有转换真正的PWM值
 		mixed = mixer_mix_threadsafe(&outputs[0], &r_mixer_limits);
-
+		
 		/* the pwm limit call takes care of out of band errors */
+		//这里将混控结果转换为真正的PWM输出值，范围【1000,2000】，其实范围是由下面两个数组决定的r_page_servo_control_min  r_page_servo_control_max，
+		//这两个数组里面存放的是在地面站设置的PWM_MIN PWM_MAX参数，决定PWM最终计算输出的范围
+		//已经实测r_page_servos[]数组里就是PWM实际输出值，范围【1000,2000】
 		pwm_limit_calc(should_arm, should_arm_nothrottle, mixed, r_setup_pwm_reverse, r_page_servo_disarmed,
 			       r_page_servo_control_min, r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
 

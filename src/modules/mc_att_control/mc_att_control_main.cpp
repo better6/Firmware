@@ -778,7 +778,11 @@ MulticopterAttitudeControl::run()
 				_actuators.control[2] = math::constrain(_actuators.control[2], -1.0f, 1.0f); //zlfxg20170711
 				
 				_actuators.control[3] = (PX4_ISFINITE(_thrust_sp)) ? _thrust_sp : 0.0f;
+				
+				//可全局搜索执行器故障注入二
 				_actuators.control[7] = _v_att_sp.landing_gear;
+
+				
 				_actuators.timestamp = hrt_absolute_time();
 				_actuators.timestamp_sample = _sensor_gyro.timestamp;
 
