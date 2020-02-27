@@ -330,6 +330,19 @@ MulticopterAttitudeControl::pos_triple_poll()
 }
 
 void
+MulticopterAttitudeControl::motor_fault_poll()
+{
+	/* check if there is a new message */
+	bool updated;
+	orb_check(_motor_fault_sub, &updated);
+
+	if (updated) {
+		orb_copy(ORB_ID(motor_fault), _motor_fault_sub, &_motor_fault);
+	}
+}
+
+
+void
 MulticopterAttitudeControl::vehicle_attitude_poll()
 {
 	/* check if there is a new message */
@@ -615,6 +628,7 @@ MulticopterAttitudeControl::run()
 	_motor_limits_sub = orb_subscribe(ORB_ID(multirotor_motor_limits));
 	_battery_status_sub = orb_subscribe(ORB_ID(battery_status));
 	_pos_sp_triplet_sub = orb_subscribe(ORB_ID(position_setpoint_triplet));
+	_motor_fault_sub = orb_subscribe(ORB_ID(motor_fault));//订阅地面站输入的执行器故障信息
 
 	_gyro_count = math::min(orb_group_count(ORB_ID(sensor_gyro)), MAX_GYRO_COUNT);
 
@@ -693,6 +707,7 @@ MulticopterAttitudeControl::run()
 			vehicle_motor_limits_poll();
 			battery_status_poll();
 			pos_triple_poll();
+			motor_fault_poll();
 			vehicle_attitude_poll();
 			sensor_correction_poll();
 			sensor_bias_poll();
@@ -787,6 +802,21 @@ MulticopterAttitudeControl::run()
 
 				//已验证可以正常获取机型参数SYS_AUTOSTART，大疆450的机型机型参数是4011,根据这个可以判别机型 避免影响其他机型选择
 				//warnx("auto= %d",_sys_autostart);
+
+				//仿真测试执行器故障信息获取正确
+				warnx("%3.2f %3.2f",(double)_motor_fault.motor_ratio[0],(double)_motor_fault.motor_time[0]);
+				warnx("%3.2f %3.2f",(double)_motor_fault.motor_ratio[1],(double)_motor_fault.motor_time[1]);
+				warnx("%3.2f %3.2f",(double)_motor_fault.motor_ratio[2],(double)_motor_fault.motor_time[2]);
+				warnx("%3.2f %3.2f\n",(double)_motor_fault.motor_ratio[3],(double)_motor_fault.motor_time[3]);
+				
+				
+				// //这里限制了pwm故障注入的功能只适用于四旋翼大疆450机型，其他机型不适合也没有此功能
+				// if(_sys_autostart==4011){
+				// 	_actuators.control[4]=
+				// 	_actuators.control[5]=
+				// 	_actuators.control[6]=
+				// 	_actuators.control[7]=
+				// }
 
 				_actuators.control[7] = _v_att_sp.landing_gear;
 
@@ -885,6 +915,7 @@ MulticopterAttitudeControl::run()
 	orb_unsubscribe(_motor_limits_sub);
 	orb_unsubscribe(_battery_status_sub);
 	orb_unsubscribe(_pos_sp_triplet_sub);
+	orb_unsubscribe(_motor_fault_sub);
 
 	for (unsigned s = 0; s < _gyro_count; s++) {
 		orb_unsubscribe(_sensor_gyro_sub[s]);
