@@ -59,6 +59,7 @@
 #define AXIS_INDEX_PITCH 1
 #define AXIS_INDEX_YAW 2
 #define AXIS_COUNT 3
+#define TIME_CONVERSION 1000*1000
 
 using namespace matrix;
 
@@ -338,6 +339,7 @@ MulticopterAttitudeControl::motor_fault_poll()
 
 	if (updated) {
 		orb_copy(ORB_ID(motor_fault), _motor_fault_sub, &_motor_fault);
+		fault_time = hrt_absolute_time();//故障获取的时间，用来后面判断故障持续的时间
 	}
 }
 
@@ -659,6 +661,7 @@ MulticopterAttitudeControl::run()
 	hrt_abstime last_run = task_start;
 	float dt_accumulator = 0.f;
 	int loop_counter = 0;
+	fault_time = hrt_absolute_time();//用于记录接收到地面站故障数据时的时间，
 
 	while (!should_exit()) {
 
@@ -804,21 +807,42 @@ MulticopterAttitudeControl::run()
 				//warnx("auto= %d",_sys_autostart);
 
 				//仿真测试执行器故障信息获取正确
-				warnx("%3.2f %3.2f",(double)_motor_fault.motor_ratio[0],(double)_motor_fault.motor_time[0]);
-				warnx("%3.2f %3.2f",(double)_motor_fault.motor_ratio[1],(double)_motor_fault.motor_time[1]);
-				warnx("%3.2f %3.2f",(double)_motor_fault.motor_ratio[2],(double)_motor_fault.motor_time[2]);
-				warnx("%3.2f %3.2f\n",(double)_motor_fault.motor_ratio[3],(double)_motor_fault.motor_time[3]);
-				
-				
-				// //这里限制了pwm故障注入的功能只适用于四旋翼大疆450机型，其他机型不适合也没有此功能
-				// if(_sys_autostart==4011){
-				// 	_actuators.control[4]=
-				// 	_actuators.control[5]=
-				// 	_actuators.control[6]=
-				// 	_actuators.control[7]=
-				// }
+				if(_sys_autostart==4011){ //限制了执行器pwm的故障注入只有在设置机型为大疆450时，即地面站参数SYS_AUTOSTART=4011时 执行器故障注入飞控端才有效
 
-				_actuators.control[7] = _v_att_sp.landing_gear;
+					// uint64_t present = hrt_absolute_time();
+					// uint64_t interval  = present - fault_time;
+					//实测 确实将actuators.control[4,5,6,7]传递到了协处理器outputs[4,5,6,7]中，范围相同都是[-1,+1]
+					//借助控制量actuators.control[4,5,6,7]，加 特定机型大疆450的混控脚本quax_x.main.mix下面新增的四句，注意是控制量+混控脚本两者结合才能将主处理器上的pwm故障信息传递到协处理器上。
+					//怎么结合的，控制量会由混控脚本来进行解析、混控叠加、输出计算pwm，这些过程对于pixhawk4在协处理器mixer.cpp中实现
+					//最后的传递到哪去了 最后将actuators.control[4,5,6,7]传递到了协处理器outputs[4,5,6,7]中，范围相同都是[-1,+1]
+					_actuators.control[4]=0.0f;
+					_actuators.control[5]=0.4f;
+					_actuators.control[6]=0.7f;
+					_actuators.control[7]=1.0f;
+
+					// if(interval < _motor_fault.motor_time[0]*TIME_CONVERSION) 
+					// {
+					// 	_actuators.control[4]=_motor_fault.motor_ratio[0]/100.0f; //把1号执行器pwm的故障率传递到协处理器pwm计算输出处
+					// }
+
+					// if(interval < _motor_fault.motor_time[1]*TIME_CONVERSION)
+					// {
+					// 	_actuators.control[5]=_motor_fault.motor_ratio[1]/100.0f; //把2号执行器pwm的故障率传递到协处理器pwm计算输出处
+					// }
+				
+					// if(interval < _motor_fault.motor_time[2]*TIME_CONVERSION)
+					// {
+					// 	_actuators.control[6]=_motor_fault.motor_ratio[2]/100.0f; //把3号执行器pwm的故障率传递到协处理器pwm计算输出处
+					// }
+
+					// if(interval < _motor_fault.motor_time[3]*TIME_CONVERSION)
+					// {
+					// 	_actuators.control[7]=_motor_fault.motor_ratio[3]/100.0f; //把4号执行器pwm的故障率传递到协处理器pwm计算输出处
+					// }
+				}
+				else{ //非大疆450机型，不执行pwm故障注入功能
+					_actuators.control[7] = _v_att_sp.landing_gear;
+				}				
 
 				
 				_actuators.timestamp = hrt_absolute_time();

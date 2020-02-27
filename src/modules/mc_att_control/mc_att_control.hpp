@@ -183,8 +183,9 @@ private:
 	float _thrust_sp;				/**< thrust setpoint */
 	matrix::Vector3f _att_control;			/**< attitude control vector */
 
-	matrix::Dcmf _board_rotation;
-	int _sys_autostart;			/**< rotation matrix for the orientation that the board is mounted */
+	matrix::Dcmf _board_rotation; /**< rotation matrix for the orientation that the board is mounted */
+	int _sys_autostart;	
+	uint64_t  fault_time; //记录故障注入的时间 方便判断故障持续
 
 	DEFINE_PARAMETERS(
 		(ParamFloat<px4::params::MC_ROLL_P>) _roll_p,

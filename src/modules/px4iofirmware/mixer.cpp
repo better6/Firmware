@@ -299,9 +299,15 @@ mixer_tick(void)
 		//循环执行计算pwm
 		//r_rc_values[]数组在px4io.h中定义，里面[0][1][2][3]这些放的是遥控器通道0 1 2 3的数据
 
+		//可全局搜索执行器故障注入四
+		//实测 确实将actuators.control[4,5,6,7]传递到了协处理器outputs[4,5,6,7]中，范围相同都是[-1,+1]
+		//借助控制量actuators.control[4,5,6,7]，加 特定机型大疆450的混控脚本quax_x.main.mix下面新增的四句，注意是控制量+混控脚本两者结合才能将主处理器上的pwm故障信息传递到协处理器上。
+		//怎么结合的，控制量会由混控脚本来进行解析、混控叠加、输出计算pwm，这些过程对于pixhawk4在协处理器mixer.cpp中实现
+		//最后的传递到哪去了 最后将actuators.control[4,5,6,7]传递到了协处理器outputs[4,5,6,7]中，范围相同都是[-1,+1]
+
 		/* mix */
 		//这是混控脚本quad_x.main.mix几个”S“混控计算得到一个”O“的地方，下面outputs[]就是存放的混控结果【-1，+1】，还没有转换真正的PWM值
-		mixed = mixer_mix_threadsafe(&outputs[0], &r_mixer_limits);
+		mixed = mixer_mix_threadsafe(&outputs[0], &r_mixer_limits);	
 		
 		/* the pwm limit call takes care of out of band errors */
 		//这里将混控结果转换为真正的PWM输出值，范围【1000,2000】，其实范围是由下面两个数组决定的r_page_servo_control_min  r_page_servo_control_max，
@@ -309,6 +315,15 @@ mixer_tick(void)
 		//已经实测r_page_servos[]数组里就是PWM实际输出值，范围【1000,2000】
 		pwm_limit_calc(should_arm, should_arm_nothrottle, mixed, r_setup_pwm_reverse, r_page_servo_disarmed,
 			       r_page_servo_control_min, r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
+
+
+		//实测 配合特定机型大疆450的混控脚本quax_x.main.mix下面新增的四句，actuators.control[4,5,6,7]传递到了协处理器outputs[4,5,6,7]中，范围相同都是[-1,+1]
+		//而且证实r_page_servos[]就是最终飞控输出的pwm值范围[1000,2000]
+		if(outputs[4]<0.1f) r_page_servos[4]=1100;
+		if(outputs[5]>0.3f) r_page_servos[5]=1400;
+		if(outputs[6]>0.6f) r_page_servos[6]=1700;
+		if(outputs[7]>0.9f) r_page_servos[7]=2000;
+
 
 		/* clamp unused outputs to zero */
 		for (unsigned i = mixed; i < PX4IO_SERVO_COUNT; i++) {
