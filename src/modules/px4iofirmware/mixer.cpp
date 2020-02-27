@@ -319,10 +319,26 @@ mixer_tick(void)
 
 		//实测 配合特定机型大疆450的混控脚本quax_x.main.mix下面新增的四句，actuators.control[4,5,6,7]传递到了协处理器outputs[4,5,6,7]中，范围相同都是[-1,+1]
 		//而且证实r_page_servos[]就是最终飞控输出的pwm值范围[1000,2000]
-		if(outputs[4]<0.1f) r_page_servos[4]=1100;
-		if(outputs[5]>0.3f) r_page_servos[5]=1400;
-		if(outputs[6]>0.6f) r_page_servos[6]=1700;
-		if(outputs[7]>0.9f) r_page_servos[7]=2000;
+
+		//如果是六旋翼或者其他机型会执行吗，不会，其他机型根本不会执行，因为在mc_attitude_control.cpp里其他机型actuators.control[4,5,6,7]=0
+		//如果故障结束下面还会执行吗，不会，因为不在故障有效时间内actuators.control[4,5,6,7]=0 也不会执行
+		//只有在大疆450机型下 且在故障时间内 下面的pwm输出才会乘以故障率
+		if(outputs[4]>0.01f){
+			r_page_servos[0]=r_page_servos[0] * outputs[4];//1号电机的故障率
+		}
+		
+		if(outputs[5]>0.01f){
+			r_page_servos[1]=r_page_servos[1] * outputs[5];//1号电机的故障率
+		}
+
+		if(outputs[6]>0.01f){
+			r_page_servos[2]=r_page_servos[2] * outputs[6];//1号电机的故障率
+		}
+
+		if(outputs[7]>0.01f){
+			r_page_servos[3]=r_page_servos[3] * outputs[7];//1号电机的故障率
+		}
+		
 
 
 		/* clamp unused outputs to zero */
