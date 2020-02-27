@@ -806,7 +806,7 @@ MulticopterAttitudeControl::run()
 				//已验证可以正常获取机型参数SYS_AUTOSTART，大疆450的机型机型参数是4011,根据这个可以判别机型 避免影响其他机型选择
 				//warnx("auto= %d",_sys_autostart);
 
-				//限制了四路pwm的故障注入功能只有在设置机型为大疆450时，即参数SYS_AUTOSTART=4011时，飞控端才有效
+				//只有在大疆450机型下 且在故障时间内 思路pwm输出才会乘以故障率
 				if(_sys_autostart==4011){ 
 
 					uint64_t present = hrt_absolute_time();
