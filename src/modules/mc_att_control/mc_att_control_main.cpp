@@ -190,6 +190,7 @@ MulticopterAttitudeControl::parameters_updated()
 
 	/* get transformation matrix from sensor/board to body frame */
 	_board_rotation = get_rot_matrix((enum Rotation)_board_rotation_param.get());
+	_sys_autostart  =  _autostart.get();
 
 	/* fine tune the rotation */
 	Dcmf board_rotation_offset(Eulerf(
@@ -780,6 +781,13 @@ MulticopterAttitudeControl::run()
 				_actuators.control[3] = (PX4_ISFINITE(_thrust_sp)) ? _thrust_sp : 0.0f;
 				
 				//可全局搜索执行器故障注入二
+				//这里订阅地面站的执行器注入的故障信息，并通过控制量+混控脚本的方式 把这里的控制量（故障率）传递到协议处理器上，在那里控制pwm的计算输出过程
+				//注意使用此功能只能选择大疆450机型 因为混控脚本会在那里改 只有选择这个进行修改的混控脚本才生效
+				//如果用户选择了六轴机型呢，6路pwm输出 在这里就屏蔽掉了 不能影响其他机型，怎么实现获取机型参数SYS_AUTOSTART进行判断
+
+				//已验证可以正常获取机型参数SYS_AUTOSTART，大疆450的机型机型参数是4011,根据这个可以判别机型 避免影响其他机型选择
+				//warnx("auto= %d",_sys_autostart);
+
 				_actuators.control[7] = _v_att_sp.landing_gear;
 
 				

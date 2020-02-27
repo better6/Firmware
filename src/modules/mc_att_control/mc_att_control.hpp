@@ -179,7 +179,8 @@ private:
 	float _thrust_sp;				/**< thrust setpoint */
 	matrix::Vector3f _att_control;			/**< attitude control vector */
 
-	matrix::Dcmf _board_rotation;			/**< rotation matrix for the orientation that the board is mounted */
+	matrix::Dcmf _board_rotation;
+	int _sys_autostart;			/**< rotation matrix for the orientation that the board is mounted */
 
 	DEFINE_PARAMETERS(
 		(ParamFloat<px4::params::MC_ROLL_P>) _roll_p,
@@ -232,6 +233,7 @@ private:
 		(ParamBool<px4::params::MC_BAT_SCALE_EN>) _bat_scale_en,
 
 		(ParamInt<px4::params::SENS_BOARD_ROT>) _board_rotation_param,
+		(ParamInt<px4::params::SYS_AUTOSTART>) _autostart,
 
 		(ParamFloat<px4::params::SENS_BOARD_X_OFF>) _board_offset_x,
 		(ParamFloat<px4::params::SENS_BOARD_Y_OFF>) _board_offset_y,
