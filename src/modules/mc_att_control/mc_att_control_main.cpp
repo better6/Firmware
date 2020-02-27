@@ -806,39 +806,42 @@ MulticopterAttitudeControl::run()
 				//已验证可以正常获取机型参数SYS_AUTOSTART，大疆450的机型机型参数是4011,根据这个可以判别机型 避免影响其他机型选择
 				//warnx("auto= %d",_sys_autostart);
 
-				//仿真测试执行器故障信息获取正确
-				if(_sys_autostart==4011){ //限制了执行器pwm的故障注入只有在设置机型为大疆450时，即地面站参数SYS_AUTOSTART=4011时 执行器故障注入飞控端才有效
+				//限制了四路pwm的故障注入功能只有在设置机型为大疆450时，即参数SYS_AUTOSTART=4011时，飞控端才有效
+				if(_sys_autostart==4011){ 
 
-					// uint64_t present = hrt_absolute_time();
-					// uint64_t interval  = present - fault_time;
-					//实测 确实将actuators.control[4,5,6,7]传递到了协处理器outputs[4,5,6,7]中，范围相同都是[-1,+1]
-					//借助控制量actuators.control[4,5,6,7]，加 特定机型大疆450的混控脚本quax_x.main.mix下面新增的四句，注意是控制量+混控脚本两者结合才能将主处理器上的pwm故障信息传递到协处理器上。
-					//怎么结合的，控制量会由混控脚本来进行解析、混控叠加、输出计算pwm，这些过程对于pixhawk4在协处理器mixer.cpp中实现
-					//最后的传递到哪去了 最后将actuators.control[4,5,6,7]传递到了协处理器outputs[4,5,6,7]中，范围相同都是[-1,+1]
-					_actuators.control[4]=0.0f;
-					_actuators.control[5]=0.4f;
-					_actuators.control[6]=0.7f;
-					_actuators.control[7]=1.0f;
+					uint64_t present = hrt_absolute_time();
+					uint64_t interval  = present - fault_time;
 
-					// if(interval < _motor_fault.motor_time[0]*TIME_CONVERSION) 
-					// {
-					// 	_actuators.control[4]=_motor_fault.motor_ratio[0]/100.0f; //把1号执行器pwm的故障率传递到协处理器pwm计算输出处
-					// }
+					//实测 配合特定机型大疆450的混控脚本quax_x.main.mix下面新增的四句，actuators.control[4,5,6,7]传递到了协处理器outputs[4,5,6,7]中，范围相同都是[-1,+1]
+					//怎么结合的，脚本解析的过程可以参考src/lib/mixer/ ，脚本计算到pwm输出的过程对于pixhawk4在协处理器mixer.cpp中实现
+					
+					if(interval < _motor_fault.motor_time[0]*TIME_CONVERSION) 
+					{
+						_actuators.control[4]=_motor_fault.motor_ratio[0]/100.0f; //把pwm的故障率通过control[]传递到协处理器outputs[]
+						_actuators.control[4] = math::constrain(_actuators.control[4], -1.0f, 1.0f);
+						printf("1=%2.3f  ",(double)_actuators.control[4]);
+					}
 
-					// if(interval < _motor_fault.motor_time[1]*TIME_CONVERSION)
-					// {
-					// 	_actuators.control[5]=_motor_fault.motor_ratio[1]/100.0f; //把2号执行器pwm的故障率传递到协处理器pwm计算输出处
-					// }
+					if(interval < _motor_fault.motor_time[1]*TIME_CONVERSION)
+					{
+						_actuators.control[5]=_motor_fault.motor_ratio[1]/100.0f;//把pwm的故障率通过control[]传递到协处理器outputs[]
+						_actuators.control[5] = math::constrain(_actuators.control[5], -1.0f, 1.0f);
+						printf("2=%2.3f  ",(double)_actuators.control[5]);
+					}
 				
-					// if(interval < _motor_fault.motor_time[2]*TIME_CONVERSION)
-					// {
-					// 	_actuators.control[6]=_motor_fault.motor_ratio[2]/100.0f; //把3号执行器pwm的故障率传递到协处理器pwm计算输出处
-					// }
+					if(interval < _motor_fault.motor_time[2]*TIME_CONVERSION)
+					{
+						_actuators.control[6]=_motor_fault.motor_ratio[2]/100.0f; //把pwm的故障率通过control[]传递到协处理器outputs[]
+						_actuators.control[6] = math::constrain(_actuators.control[6], -1.0f, 1.0f);
+						printf("3=%2.3f  ",(double)_actuators.control[6]);
+					}
 
-					// if(interval < _motor_fault.motor_time[3]*TIME_CONVERSION)
-					// {
-					// 	_actuators.control[7]=_motor_fault.motor_ratio[3]/100.0f; //把4号执行器pwm的故障率传递到协处理器pwm计算输出处
-					// }
+					if(interval < _motor_fault.motor_time[3]*TIME_CONVERSION)
+					{
+						_actuators.control[7]=_motor_fault.motor_ratio[3]/100.0f; //把pwm的故障率通过control[]传递到协处理器outputs[]
+						_actuators.control[7] = math::constrain(_actuators.control[7], -1.0f, 1.0f);
+						printf("4=%2.3f\n\n",(double)_actuators.control[7]);
+					}
 				}
 				else{ //非大疆450机型，不执行pwm故障注入功能
 					_actuators.control[7] = _v_att_sp.landing_gear;
