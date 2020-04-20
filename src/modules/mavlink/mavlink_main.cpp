@@ -2039,7 +2039,7 @@ Mavlink::task_main(int argc, char *argv[])
 		//可全局搜索自定义MAVLINK发送三
 		configure_stream("TRACK_POSITION", 2.0f);
 		//configure_stream("POSITION_TARGET_GLOBAL_INT", 1.0f);//期望的全球坐标
-		//configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);//pwm输出
+		configure_stream("SERVO_OUTPUT_RAW_0", 1.0f);//pwm输出显示 在PWM故障注入功能时不可屏蔽
 
 
 		//目前数据精简不需要的数据
