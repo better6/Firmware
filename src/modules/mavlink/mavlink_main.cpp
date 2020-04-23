@@ -2063,6 +2063,7 @@ Mavlink::task_main(int argc, char *argv[])
 
 	//这是telem2的可选配置
 	//通过参数SYS_COMPANION配置成companion进入这个模式，利用这个模式以及telem2进行主从之间的通信
+	//主从飞机的数传2口都需要配置成companion 57600才能进行主从编队通信，实现编队。
     case MAVLINK_MODE_ONBOARD:  //使用companion时会进入这一模式,设置第二数传进入这个模式
 
         //configure_stream("PING", 1.0f);
