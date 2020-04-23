@@ -59,7 +59,7 @@
 #define AXIS_INDEX_PITCH 1
 #define AXIS_INDEX_YAW 2
 #define AXIS_COUNT 3
-#define TIME_CONVERSION 1000*1000
+#define TIME_CONVERSION 1000  //故障持续时间修改为以ms为单位，飞控里面的时间是us
 
 using namespace matrix;
 
