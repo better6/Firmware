@@ -124,7 +124,7 @@ using namespace sensors;
  */
 #define PCB_TEMP_ESTIMATE_DEG		5.0f
 #define STICK_ON_OFF_LIMIT		0.75f
-#define TIME_CONVERSION 		1000*1000
+#define TIME_CONVERSION 		1000  //修改传感器故障持续时间以ms为单位
 /**
  * Sensor app start / stop handling function
  *
