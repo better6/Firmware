@@ -817,7 +817,7 @@ MulticopterAttitudeControl::run()
 					
 					if(interval < _motor_fault.motor_time[0]*TIME_CONVERSION) 
 					{
-						_actuators.control[4]=_motor_fault.motor_ratio[0]/100.0f; //把pwm的故障率通过control[]传递到协处理器outputs[]
+						_actuators.control[4]=_motor_fault.motor_ratio[0]; //把pwm的故障率通过control[]传递到协处理器outputs[]
 						_actuators.control[4] = math::constrain(_actuators.control[4], -1.0f, 1.0f);
 						//printf("1=%2.3f  ",(double)_actuators.control[4]);//已经测试地面站故障信息到_actuators.control[]传输正确，且只有在机型设置为大疆450时故障信息才会生效在飞控中启用，且故障持续时间测试也正常可用
 					}//不在故障时间内赋值为0
@@ -827,7 +827,7 @@ MulticopterAttitudeControl::run()
 
 					if(interval < _motor_fault.motor_time[1]*TIME_CONVERSION)
 					{
-						_actuators.control[5]=_motor_fault.motor_ratio[1]/100.0f;//把pwm的故障率通过control[]传递到协处理器outputs[]
+						_actuators.control[5]=_motor_fault.motor_ratio[1];//把pwm的故障率通过control[]传递到协处理器outputs[]
 						_actuators.control[5] = math::constrain(_actuators.control[5], -1.0f, 1.0f);
 						//printf("2=%2.3f  ",(double)_actuators.control[5]);
 					}
@@ -837,7 +837,7 @@ MulticopterAttitudeControl::run()
 				
 					if(interval < _motor_fault.motor_time[2]*TIME_CONVERSION)
 					{
-						_actuators.control[6]=_motor_fault.motor_ratio[2]/100.0f; //把pwm的故障率通过control[]传递到协处理器outputs[]
+						_actuators.control[6]=_motor_fault.motor_ratio[2]; //把pwm的故障率通过control[]传递到协处理器outputs[]
 						_actuators.control[6] = math::constrain(_actuators.control[6], -1.0f, 1.0f);
 						//printf("3=%2.3f  ",(double)_actuators.control[6]);
 					}
@@ -846,7 +846,7 @@ MulticopterAttitudeControl::run()
 					}
 					if(interval < _motor_fault.motor_time[3]*TIME_CONVERSION)
 					{
-						_actuators.control[7]=_motor_fault.motor_ratio[3]/100.0f; //把pwm的故障率通过control[]传递到协处理器outputs[]
+						_actuators.control[7]=_motor_fault.motor_ratio[3]; //把pwm的故障率通过control[]传递到协处理器outputs[]
 						_actuators.control[7] = math::constrain(_actuators.control[7], -1.0f, 1.0f);
 						//printf("4=%2.3f\n\n",(double)_actuators.control[7]);
 					}

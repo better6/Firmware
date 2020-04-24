@@ -2542,18 +2542,19 @@ void MavlinkReceiver::handle_message_fault_command(mavlink_message_t *msg)
 	_sensor.timestamp = hrt_absolute_time();
 	_motor.timestamp = hrt_absolute_time();
 
-	//传感器故障
-	_sensor.sensor_ratio[0]=_mav_fault.sensor_ratio[0];
-	_sensor.sensor_ratio[1]=_mav_fault.sensor_ratio[1];
-	_sensor.sensor_ratio[2]=_mav_fault.sensor_ratio[2];
-	_sensor.sensor_ratio[3]=_mav_fault.sensor_ratio[3];
-	_sensor.sensor_ratio[4]=_mav_fault.sensor_ratio[4];
-	_sensor.sensor_ratio[5]=_mav_fault.sensor_ratio[5];
-	_sensor.sensor_ratio[6]=_mav_fault.sensor_ratio[6];
-	_sensor.sensor_ratio[7]=_mav_fault.sensor_ratio[7];
-	_sensor.sensor_ratio[8]=_mav_fault.sensor_ratio[8];
-	_sensor.sensor_ratio[9]=_mav_fault.sensor_ratio[9];
+	//传感器故障率是(100-地面站输入故障)/100就是故障是乘以(1-地面站用户输入的故障%)
+	_sensor.sensor_ratio[0]=(100 - _mav_fault.sensor_ratio[0])/100.0f;
+	_sensor.sensor_ratio[1]=(100 - _mav_fault.sensor_ratio[1])/100.0f;
+	_sensor.sensor_ratio[2]=(100 - _mav_fault.sensor_ratio[2])/100.0f;
+	_sensor.sensor_ratio[3]=(100 - _mav_fault.sensor_ratio[3])/100.0f;
+	_sensor.sensor_ratio[4]=(100 - _mav_fault.sensor_ratio[4])/100.0f;
+	_sensor.sensor_ratio[5]=(100 - _mav_fault.sensor_ratio[5])/100.0f;
+	_sensor.sensor_ratio[6]=(100 - _mav_fault.sensor_ratio[6])/100.0f;
+	_sensor.sensor_ratio[7]=(100 - _mav_fault.sensor_ratio[7])/100.0f;
+	_sensor.sensor_ratio[8]=(100 - _mav_fault.sensor_ratio[8])/100.0f;
+	_sensor.sensor_ratio[9]=(100 - _mav_fault.sensor_ratio[9])/100.0f;
 
+	//故障持续时间在其他文件里转换为ms，飞控里面时间计算基本单位是us
 	_sensor.sensor_time[0]=_mav_fault.sensor_time[0];
 	_sensor.sensor_time[1]=_mav_fault.sensor_time[1];
 	_sensor.sensor_time[2]=_mav_fault.sensor_time[2];
@@ -2565,14 +2566,14 @@ void MavlinkReceiver::handle_message_fault_command(mavlink_message_t *msg)
 	_sensor.sensor_time[8]=_mav_fault.sensor_time[8];
 	_sensor.sensor_time[9]=_mav_fault.sensor_time[9];
 
-	//pwm故障
-	_motor.motor_ratio[0]=_mav_fault.motor_ratio[0];
-	_motor.motor_ratio[1]=_mav_fault.motor_ratio[1];
-	_motor.motor_ratio[2]=_mav_fault.motor_ratio[2];
-	_motor.motor_ratio[3]=_mav_fault.motor_ratio[3];
-	_motor.motor_ratio[4]=_mav_fault.motor_ratio[4];
-	_motor.motor_ratio[5]=_mav_fault.motor_ratio[5];
-
+	//pwm故障率是(100-地面站输入故障)/100就是故障是乘以(1-地面站用户输入的故障%)
+	_motor.motor_ratio[0]=(100 - _mav_fault.motor_ratio[0])/100.0f;
+	_motor.motor_ratio[1]=(100 - _mav_fault.motor_ratio[1])/100.0f;
+	_motor.motor_ratio[2]=(100 - _mav_fault.motor_ratio[2])/100.0f;
+	_motor.motor_ratio[3]=(100 - _mav_fault.motor_ratio[3])/100.0f;
+	_motor.motor_ratio[4]=(100 - _mav_fault.motor_ratio[4])/100.0f;
+	_motor.motor_ratio[5]=(100 - _mav_fault.motor_ratio[5])/100.0f;
+	//故障持续时间在其他文件里转换为ms，飞控里面时间计算基本单位是us
 	_motor.motor_time[0]=_mav_fault.motor_time[0];
 	_motor.motor_time[1]=_mav_fault.motor_time[1];
 	_motor.motor_time[2]=_mav_fault.motor_time[2];
