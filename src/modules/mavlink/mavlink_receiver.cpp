@@ -2630,6 +2630,7 @@ void MavlinkReceiver::handle_message_follow_me(mavlink_message_t *msg)
 	_topic.vz  = _follow_msg.vel[2];
 
 	_topic.slave_delay  = _follow_msg.info[0]; //接收主机传递过来的延时参数
+	_topic.form_type    = _follow_msg.info[1]; //可全局搜索主机把编队类型再次传给从机二 
 
 	_topic.master_utc = _follow_msg.utc_time;  //接收主机发送消息的utc时间
 

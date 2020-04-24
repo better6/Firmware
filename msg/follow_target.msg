@@ -8,3 +8,4 @@ uint8 est_cap       # target reporting capabilities
 uint8 slave_delay   # Receive delay parameters passed by the host
 
 uint64 master_utc   #记录下接收到的主机的utc时间
+uint8 form_type      # 主机传递给从机的编队类型

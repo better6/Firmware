@@ -87,6 +87,7 @@
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/vehicle_gps_position.h>
+#include <uORB/topics/formation_type.h>
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_local_position_setpoint.h>
@@ -4315,6 +4316,7 @@ private:
     MavlinkOrbSubscription *_vehicle_status_sub;
     MavlinkOrbSubscription *_globalpos_sub;
     MavlinkOrbSubscription *_gpspos_sub;
+	MavlinkOrbSubscription *_form_type_sub;
 
 
     uint32_t _sequence;
@@ -4328,6 +4330,7 @@ protected:
         _vehicle_status_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_status))),
         _globalpos_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_global_position))),
         _gpspos_sub(_mavlink->add_orb_subscription(ORB_ID(vehicle_gps_position))),
+		_form_type_sub(_mavlink->add_orb_subscription(ORB_ID(formation_type))),
         _sequence(0)
     {}
 
@@ -4336,8 +4339,10 @@ protected:
         bool updated = false;
 
 		//订阅vehicle_status msg消息，从此消息中可以判断飞机的SYS_ID  status.system_id
-        vehicle_status_s status = {}; 
+        static vehicle_status_s    status = {}; //获取飞机编号SYS_SUTOSTART
+		static formation_type_s form    = {};//编队类型 主机向从机发送编队类型
         _vehicle_status_sub->update(&status);
+		_form_type_sub->update(&form);
 
 		 mavlink_follow_me_t msg = {};
 
@@ -4381,6 +4386,8 @@ protected:
 				msg.info[0] = (uint8_t)(delay*10);//因为FOLLOW_ME内容不完全这里借助一个整形变量进行传递
 				//warnx("delay=%d",msg.info[0]);
 
+				//可全局搜索主机把编队类型再次传给从机一 避免地面站队形切换从机接收不到
+				msg.info[1]=form.formation_type;
 
 				//把主机的速度也传递过去 用来弥补主从通信的延时问题
 				msg.vel[0]=global.vel_n;
