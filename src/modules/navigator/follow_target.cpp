@@ -183,7 +183,7 @@ void FollowTarget::on_active()
 		_master_vel(2) = 0;
 
 
-		_curr_shape=get_master.form_type;   //可全局搜索主机把编队类型再次传给从机三
+		_curr_shape=get_master.form_type;   //可全局搜索主机把编队类型再次传给从机三,实测可行
 		//预处理：取所有参数、包括队形参数、主机速度方向改变从机走位的判断
 		formation_pre();
 
