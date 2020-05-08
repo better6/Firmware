@@ -67,11 +67,18 @@ void FlightTaskManualPosition::_scaleSticks()
 void FlightTaskManualPosition::_updateXYlock()
 {
 	/* If position lock is not active, position setpoint is set to NAN.*/
+
+	//获取刹车参数 解决飞机在定点模式下刹车太猛的问题，刹车角度太大 刹车效果很明显 但是感受不好存在风险	
+	int32_t enable_brake = 0;
+	param_t _param_enable_brake = param_find("ENABLE_BRAKE");
+	param_get(_param_enable_brake, &enable_brake);
+
+
 	const float vel_xy_norm = Vector2f(&_velocity(0)).length();
 	const bool apply_brake = Vector2f(&_velocity_setpoint(0)).length() < FLT_EPSILON;
 	const bool stopped = (_vel_hold_thr_xy.get() < FLT_EPSILON || vel_xy_norm < _vel_hold_thr_xy.get());
 
-	if (apply_brake && stopped && !PX4_ISFINITE(_position_setpoint(0))) {
+	if ( enable_brake && apply_brake && stopped && !PX4_ISFINITE(_position_setpoint(0))) {
 		_position_setpoint(0) = _position(0);
 		_position_setpoint(1) = _position(1);
 

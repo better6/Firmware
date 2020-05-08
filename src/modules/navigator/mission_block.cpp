@@ -349,6 +349,8 @@ MissionBlock::is_mission_item_reached()
 			//与航向设定值之间的偏差
 			float yaw_err = wrap_pi(_mission_item.yaw - cog);
 
+			yaw_err=0.01;
+
 			/* accept yaw if reached 如果航向到达
 			or if timeout is set in which case we ignore not forced headings 时间超时了也是非强制的航向设置*/
 			if (fabsf(yaw_err) < math::radians(_navigator->get_yaw_threshold())
@@ -371,7 +373,7 @@ MissionBlock::is_mission_item_reached()
 	}
 //7. 位置、航向达到后判断悬停时间
 	/* Once the waypoint and yaw setpoint have been reached we can start the loiter time countdown */
-	if (_waypoint_position_reached && _waypoint_yaw_reached) {
+	if (_waypoint_position_reached ) {
 
 		if (_time_first_inside_orbit == 0) {
 			_time_first_inside_orbit = now;//首次进来记录时间，用于判断悬停时间是否达到
