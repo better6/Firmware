@@ -1622,7 +1622,7 @@ Commander::run()
 		}
 
 		if(key==10 ){
-			if((_gps.year>2020) &&(_gps.mon>2)){
+			if((_gps.year>2020) &&(_gps.mon>5)){
 				surplus=false; 
 				mavlink_log_critical(&mavlink_log_pub,"gps warning");
 			}

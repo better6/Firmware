@@ -72,6 +72,8 @@ void FlightTaskManualPosition::_updateXYlock()
 	int32_t enable_brake = 0;
 	param_t _param_enable_brake = param_find("ENABLE_BRAKE");
 	param_get(_param_enable_brake, &enable_brake);
+	//实测960飞机刹车问题未改善
+	//warnx("enable_brake=%d",enable_brake);
 
 
 	const float vel_xy_norm = Vector2f(&_velocity(0)).length();

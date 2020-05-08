@@ -169,6 +169,7 @@ private:
 
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::MPC_FLT_TSK>) _test_flight_tasks, /**< temporary flag for the transition to flight tasks */
+		(ParamInt<px4::params::ENABLE_BRAKE>) _enable_brake,
 		(ParamFloat<px4::params::MPC_MANTHR_MIN>) _manual_thr_min, /**< minimal throttle output when flying in manual mode */
 		(ParamFloat<px4::params::MPC_MANTHR_MAX>) _manual_thr_max, /**< maximal throttle output when flying in manual mode */
 		(ParamFloat<px4::params::MPC_XY_MAN_EXPO>)
