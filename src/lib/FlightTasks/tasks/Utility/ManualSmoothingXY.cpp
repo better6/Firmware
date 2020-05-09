@@ -121,7 +121,7 @@ ManualSmoothingXY::_getIntention(const matrix::Vector2f &vel_sp, const matrix::V
 		}
 	}
 
-	return Intention::brake; //default is brake
+	return Intention::deceleration; //default is brake
 }
 
 void
@@ -131,7 +131,7 @@ ManualSmoothingXY::_getStateAcceleration(const matrix::Vector2f &vel_sp, const m
 
 	switch (intention) {
 	case Intention::brake: {
-
+		
 			if (_intention == Intention::direction_change) {
 				/* Vehicle switched from direciton change to brake.
 				 * Don't do any slwerate but rather just stop.
@@ -176,7 +176,7 @@ ManualSmoothingXY::_getStateAcceleration(const matrix::Vector2f &vel_sp, const m
 			break;
 		}
 
-	case Intention::direction_change: {
+	case Intention::direction_change: {	warnx("dir_change");
 
 			/* We allow for fast change by setting previous setpoint to current
 			 * setpoint.
@@ -192,7 +192,7 @@ ManualSmoothingXY::_getStateAcceleration(const matrix::Vector2f &vel_sp, const m
 			break;
 		}
 
-	case Intention::acceleration: {
+	case Intention::acceleration: {	warnx("acc");
 			/* Limit acceleration linearly based on velocity setpoint.*/
 			_acc_state_dependent = (_acc_xy_max.get() - _dec_xy_min.get())
 					       / _vel_manual.get() * vel_sp.length() + _dec_xy_min.get();
@@ -200,6 +200,8 @@ ManualSmoothingXY::_getStateAcceleration(const matrix::Vector2f &vel_sp, const m
 		}
 
 	case Intention::deceleration: {
+
+		warnx("deceleration");
 			_acc_state_dependent = _dec_xy_min.get();
 			break;
 		}

@@ -1048,7 +1048,6 @@ MulticopterPositionControl::set_manual_acceleration_xy(matrix::Vector2f &stick_x
 
 	/* check if stick direction and current velocity are within 60angle */
 	const bool is_aligned = (stick_xy_norm * stick_xy_prev_norm) > 0.5f;
-
 	/* check if zero input stick */
 	const bool is_prev_zero = (fabsf(_stick_input_xy_prev.length()) <= FLT_EPSILON);
 	const bool is_current_zero = (fabsf(stick_xy.length()) <= FLT_EPSILON);
@@ -1065,7 +1064,8 @@ MulticopterPositionControl::set_manual_acceleration_xy(matrix::Vector2f &stick_x
 
 	if (is_current_zero) {
 		/* we want to stop */
-		intention = brake;
+		//intention = brake;
+		intention = deceleration;
 
 	} else if (do_acceleration) {
 		/* we do manual acceleration */
@@ -1090,8 +1090,9 @@ MulticopterPositionControl::set_manual_acceleration_xy(matrix::Vector2f &stick_x
 	 */
 
 	/* we always want to break starting with slow deceleration */
-	if ((_user_intention_xy != brake) && (intention  == brake)) {
-
+	if ((_user_intention_xy != brake) && (intention  == brake)&& false) {
+		
+			warnx("brake");
 		if (_jerk_hor_max.get() > _jerk_hor_min.get()) {
 			_manual_jerk_limit_xy = (_jerk_hor_max.get() - _jerk_hor_min.get()) / _velocity_hor_manual.get() *
 						sqrtf(_vel(0) * _vel(0) + _vel(1) * _vel(1)) + _jerk_hor_min.get();
@@ -1101,13 +1102,18 @@ MulticopterPositionControl::set_manual_acceleration_xy(matrix::Vector2f &stick_x
 
 		} else {
 
-			/* set the jerk limit large since we don't know it better*/
+			/* set the jerk limit large since we don't know it better   1000000.f*/
 			_manual_jerk_limit_xy = 1000000.f;
 
 			/* at brake we use max acceleration */
 			_acceleration_state_dependent_xy = _acceleration_hor_max.get();
 
+
+
 		}
+
+		warnx("acc is %2.4f",(double)_acceleration_state_dependent_xy);
+		_acceleration_state_dependent_xy=1.1;
 
 		/* reset slew rate */
 		_vel_sp_prev(0) = _vel(0);
@@ -1346,7 +1352,7 @@ MulticopterPositionControl::control_manual()
 		_pos_hold_engaged = pos_hold_desired;
 
 		/* use max acceleration */
-		if (_pos_hold_engaged) {
+		if (false&& _pos_hold_engaged) {
 			_acceleration_state_dependent_xy = _acceleration_hor_max.get();
 		}
 
@@ -2510,15 +2516,20 @@ MulticopterPositionControl::calculate_thrust_setpoint()
 	/* velocity error */
 	matrix::Vector3f vel_err = _vel_sp - _vel;
 
+	if(vel_err(0) >2.0f)vel_err(0)= 2.0f;
+	if(vel_err(1) >2.0f)vel_err(1)= 2.0f;
+
+
 	/* thrust vector in NED frame */
 	matrix::Vector3f thrust_sp;
 
-	if (_control_mode.flag_control_acceleration_enabled && _pos_sp_triplet.current.acceleration_valid) {
+	if (_control_mode.flag_control_acceleration_enabled && _pos_sp_triplet.current.acceleration_valid ) {
 		thrust_sp = matrix::Vector3f(_pos_sp_triplet.current.a_x, _pos_sp_triplet.current.a_y, _pos_sp_triplet.current.a_z);
 
 	} else {
 		thrust_sp = vel_err.emult(_vel_p) + _vel_err_d.emult(_vel_d)
 			    + _thrust_int - matrix::Vector3f(0.0f, 0.0f, _thr_hover.get());
+
 	}
 
 	if (!_control_mode.flag_control_velocity_enabled && !_control_mode.flag_control_acceleration_enabled) {
@@ -2748,6 +2759,8 @@ MulticopterPositionControl::calculate_thrust_setpoint()
 	_local_pos_sp.acc_x = thrust_sp(0) * CONSTANTS_ONE_G;
 	_local_pos_sp.acc_y = thrust_sp(1) * CONSTANTS_ONE_G;
 	_local_pos_sp.acc_z = thrust_sp(2) * CONSTANTS_ONE_G;
+
+
 
 	_att_sp.timestamp = hrt_absolute_time();
 }

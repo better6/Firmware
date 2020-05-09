@@ -75,6 +75,7 @@ void FlightTaskManualPosition::_updateXYlock()
 	//实测960飞机刹车问题未改善
 	//warnx("enable_brake=%d",enable_brake);
 
+	warnx("lock");
 
 	const float vel_xy_norm = Vector2f(&_velocity(0)).length();
 	const bool apply_brake = Vector2f(&_velocity_setpoint(0)).length() < FLT_EPSILON;
@@ -86,6 +87,7 @@ void FlightTaskManualPosition::_updateXYlock()
 
 	} else if (!apply_brake) {
 		/* don't lock*/
+		warn("no lock");
 		_position_setpoint(0) = NAN;
 		_position_setpoint(1) = NAN;
 	}
