@@ -334,6 +334,10 @@ MissionBlock::is_mission_item_reached()
 	/* Check if the waypoint and the requested yaw setpoint. 检查航点和偏航设定值 */
 
 //6. 位置到达后 判断航向
+	//飞机在mission过程中飞往下一个航点时航向动作可以有多种选择，通过参数MIS_YAWMODE进行选择
+	//在多机编队中结合实际需求决定使用MIS_YAWMODE=3就是飞机保持航向不变mission过程中始终保持机头背离home
+	//这样的话飞机在达到某个航点后可能会暂停不走了，因为检测到航向未到达 所以这里配合MIS_YAWMODE=3不做航向达到的判断
+	//_waypoint_yaw_reached=true;//不能这样修改 这样已修改以后通过参数想让飞机转头时也就失效了
 	if (_waypoint_position_reached && !_waypoint_yaw_reached) {
 
 		if ((_navigator->get_vstatus()->is_rotary_wing

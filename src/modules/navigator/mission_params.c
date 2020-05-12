@@ -134,7 +134,7 @@ PARAM_DEFINE_INT32(MIS_ALTMODE, 1); //高度的一阶滤波
  * @value 3 Heading away from home
  * @group Mission
  */
-PARAM_DEFINE_INT32(MIS_YAWMODE, 3); //mission模式下 航向的保持方式，指向航点 还是指向home  还是背离home
+PARAM_DEFINE_INT32(MIS_YAWMODE, 3); //  mission模式下 航向的保持方式，指向航点 还是指向home  还是背离home
 
 /**
 * Enable yaw control of the mount. (Only affects multicopters and ROI mission items)
