@@ -571,19 +571,19 @@ void FollowTarget::formation_pre()
 	//cos120 = cos-120 = -0.5
 	//cos90  = cos-90  = 0
 	//从机跟随的是主机的速度方向 根据主机前后两次的速度方向，调整从机跟随的方位，主要目的是防止主机方向变化太大时 从机交叉互换位置有相撞的可能性。
-	if(_master_vel.length() > 0.8F){//主机有速度了，才会进行比较
+	// if(_master_vel.length() > 0.8F){//主机有速度了，才会进行比较
 		
-		float cos = _vel_pre.normalized() * _master_vel.normalized();
-		if(cos < -0.5f){ //主机速度方向改变很大，超出+—120度了，从机交叉有相撞风险,那么不交叉走位了
-			if(_vehicle_id==2)      { _vehicle_id=3; }
-			else if(_vehicle_id==3) { _vehicle_id=2; }
-			else                    {                }
-		}
-		//其他 主机小角度转弯 从机正常旋转跟随走位。
+	// 	float cos = _vel_pre.normalized() * _master_vel.normalized();
+	// 	if(cos < -0.5f){ //主机速度方向改变很大，超出+—120度了，从机交叉有相撞风险,那么不交叉走位了
+	// 		if(_vehicle_id==2)      { _vehicle_id=3; }
+	// 		else if(_vehicle_id==3) { _vehicle_id=2; }
+	// 		else                    {                }
+	// 	}
+	// 	//其他 主机小角度转弯 从机正常旋转跟随走位。
 
-		_vel_pre=_master_vel;
+	// 	_vel_pre=_master_vel;
 
-	}
+	// }
 
 
 
