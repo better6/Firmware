@@ -642,13 +642,16 @@ fi
 		fi
 	fi
 
-	#这里由参数SYS_COMPANION决定telem2的使用，这里编队telem2地面站参数使用companion，实际这里修改波特率为115200
+	#可全局搜索飞控数传配置 这是TELEM2在系统参数xx下的波特率配置
+	#主从编队 通过TELEM2实现 主从通信，TELEM2的配置 通过参数SYS_COMPANION进行配置
+	#在telem2实现主从编队通信时，每架飞机的SYS_COMPANION参数需要配置成companion 57600模式
+	#这种模式下telem2的波特率可以在以下进行设置，telem2的通信内容可以在mavlink_main.cpp中配置
 	#后面的-x  -f是不是强制发送的一些额外的mavlink消息
-	#主从通信tele没只能配置成COMPANIO57600模式，因为在这个模式下对mavlink消息又做了一些处理，其他模式没有
+	#目前编队 要求telem2配置成companion 57600，背后实际波特率在下面修改为57600，通信的内容在mavlink_main.cpp模式 MAVLINK_MODE_ONBOARD那里限制
 
 	if param compare SYS_COMPANION 57600
 	then
-		mavlink start -d ${MAVLINK_COMPANION_DEVICE} -b 115200 -m onboard -r 1000
+		mavlink start -d ${MAVLINK_COMPANION_DEVICE} -b 57600 -m onboard -r 1000
 	fi
 	if param compare SYS_COMPANION 460800
 	then

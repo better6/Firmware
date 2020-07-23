@@ -220,7 +220,7 @@ Mavlink::Mavlink() :
 	_forwarding_on(false),
 	_ftp_on(false),
 	_uart_fd(-1),
-	_baudrate(115200),
+	_baudrate(57600),
 	_datarate(1000),
 	_datarate_events(500),
 	_rate_mult(1.0f),
@@ -1739,7 +1739,8 @@ int
 Mavlink::task_main(int argc, char *argv[])
 {
 	int ch;
-	_baudrate = 115200;
+	//可全局搜索飞控数传配置三 这是TELEM1波特率配置
+	_baudrate = 57600;
 	_datarate = 0;
 	_mode = MAVLINK_MODE_NORMAL;
 	bool _force_flow_control = false;
@@ -2061,11 +2062,16 @@ Mavlink::task_main(int argc, char *argv[])
 
         break;
 
-	//这是telem2的可选配置
-	//通过参数SYS_COMPANION配置成companion进入这个模式，利用这个模式以及telem2进行主从之间的通信
-	//主从飞机的数传2口都需要配置成companion 57600才能进行主从编队通信，实现编队。
+	//可全局搜索飞控数传配置二，这是telem2的可选配置
+	// 主从编队 通过TELEM2实现 主从通信，TELEM2的配置 通过参数SYS_COMPANION进行配置
+	// 在telem2实现主从编队通信时，每架飞机的SYS_COMPANION参数需要配置成companion 57600模式
+	// 这种模式下telem2的波特率在rcs那里进行设置，telem2的通信内容在这里进行配置
+	// 目前编队 要求telem2配置成companion 57600，rcs那里波特率修改为57600，通信的内容MAVLINK_MODE_ONBOARD这里限制
     case MAVLINK_MODE_ONBOARD:  //使用companion时会进入这一模式,设置第二数传进入这个模式
 
+
+
+	
         //configure_stream("PING", 1.0f);
 		//configure_stream("FOLLOW_TARGET", 100.0f);
 		//mavlink_log_info(&_mavlink_log_pub,"telem2配置成follow");
