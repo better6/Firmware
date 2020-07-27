@@ -432,8 +432,8 @@ Navigator::run()
 
 		orb_check(_formation_type_sub, &updated);
 
-		if (updated) { //地面站有编队信息发过来
-		
+		//if (updated) { //地面站有编队信息发过来
+		if(false){ //军委项目 飞控端不对地面站进行编队按键进行处理
 				_formation_pre=_formation;
 
 				orb_copy(ORB_ID(formation_type), _formation_type_sub, &_formation);
