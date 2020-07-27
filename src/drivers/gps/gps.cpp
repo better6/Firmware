@@ -402,17 +402,27 @@ int GPS::pollOrRead(uint8_t *buf, size_t buf_length, int timeout)
 			 * If we have all requested data available, read it without waiting.
 			 * If more bytes are available, we'll go back to poll() again.
 			 */
+
+
+			const unsigned character_count = 32; 
+		// minimum bytes that we want to read
+			unsigned baudrate = _baudrate == 0 ? 115200 : _baudrate;
+			const unsigned sleeptime = character_count * 1000000 / (baudrate / 10);
+
+
+
+
 #ifdef __PX4_NUTTX
 			int err = 0;
 			int bytesAvailable = 0;
 			err = ioctl(_serial_fd, FIONREAD, (unsigned long)&bytesAvailable);
 
 			if ((err != 0) || (bytesAvailable < (int)buf_length)) {
-				usleep(GPS_WAIT_BEFORE_READ * 1000);
+				usleep(sleeptime);
 			}
 
 #else
-			usleep(GPS_WAIT_BEFORE_READ * 1000);
+			usleep(sleeptime);
 #endif
 
 			ret = ::read(_serial_fd, buf, buf_length);
@@ -673,6 +683,8 @@ GPS::run()
 				_helper = nullptr;
 			}
 
+			_mode=GPS_DRIVER_MODE_ASHTECH;
+
 			switch (_mode) {
 			case GPS_DRIVER_MODE_NONE:
 				_mode = GPS_DRIVER_MODE_UBX;
@@ -717,7 +729,7 @@ GPS::run()
 
 				int helper_ret;
 
-				while ((helper_ret = _helper->receive(TIMEOUT_5HZ)) > 0 && !should_exit()) {
+				while ((helper_ret = _helper->receive(TIMEOUT_5HZ)) > 0 && true ){
 
 					if (helper_ret & 1) {
 						publish();
@@ -774,6 +786,7 @@ GPS::run()
 				}
 			}
 
+			_mode=GPS_DRIVER_MODE_ASHTECH;
 			if (_mode_auto) {
 				switch (_mode) {
 				case GPS_DRIVER_MODE_UBX:
@@ -901,7 +914,6 @@ void
 GPS::publish()
 {
 	if (_instance == Instance::Main || _is_gps_main_advertised) {
-		_report_gps_pos.timestamp=hrt_absolute_time();
 		orb_publish_auto(ORB_ID(vehicle_gps_position), &_report_gps_pos_pub, &_report_gps_pos, &_gps_orb_instance,
 				 ORB_PRIO_DEFAULT);
 		_is_gps_main_advertised = true;
