@@ -371,9 +371,9 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 	//这是红杏地面站发给我的故障设置
 	//实践验证 接收自定义的mavlink消息只需要在这里添加case进行处理即可，没有额外需要处理的地方
 	//如果接收不到 可能是因为双方定义的协议不一致
-	case MAVLINK_MSG_ID_FAULT_COMMAND:
-        handle_message_fault_command(msg);
-        break;		
+	// case MAVLINK_MSG_ID_FAULT_COMMAND:
+    //     handle_message_fault_command(msg);
+    //     break;		
 
 	//这是主机发给从机的跟随目标位置，相比Follow_target数据有精简
 	// case MAVLINK_MSG_ID_FOLLOW_ME:
@@ -381,9 +381,9 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
     //     break;		
 
 	//增加用于后期通信扩展的
-	case MAVLINK_MSG_ID_LETTER:
-        handle_message_letter(msg);
-        break;		
+	// case MAVLINK_MSG_ID_LETTER:
+    //     handle_message_letter(msg);
+    //     break;		
 
 	default:
 		break;
