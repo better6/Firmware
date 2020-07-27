@@ -318,44 +318,6 @@ mixer_tick(void)
 		pwm_limit_calc(should_arm, should_arm_nothrottle, mixed, r_setup_pwm_reverse, r_page_servo_disarmed,
 			       r_page_servo_control_min, r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
 
-
-		//实测 配合特定机型大疆450的混控脚本quax_x.main.mix下面新增的四句，actuators.control[4,5,6,7]传递到了协处理器outputs[4,5,6,7]中，范围相同都是[-1,+1]
-		//而且证实r_page_servos[]就是最终飞控输出的pwm值范围[1000,2000]
-
-		//如果是六旋翼或者其他机型会执行吗，不会，其他机型根本不会执行，因为在mc_attitude_control.cpp里其他机型actuators.control[4,5,6,7]=0
-		//如果故障结束下面还会执行吗，不会，因为不在故障有效时间内actuators.control[4,5,6,7]=0 也不会执行
-		// 只有在大疆450机型下 且在故障时间内 下面的pwm输出才会乘以故障率
-
-		//下面这里必须严格区分四旋翼还是六旋翼 必然会导致六旋翼pwm的突然触底 引起roll抖动导致炸机
-		//HEXA_NORMAL表示无pwm故障注入功能 这里代指六旋翼  QUAD_FAULT表示有pwm故障注入功能这里代指四旋翼
-		if(HEXA_NORMAL){  //赋值4不ok,5不行，9可以！17可以，16可以，避免影响六旋翼
-		if(outputs[4]>0.05f){
-			r_page_servos[0]=r_page_servos[0] * outputs[4];//1号电机的故障率
-			//实测 电机在解锁后不能低于900，故障输出低于900 故障结束后电机没法再成功转起，应该是影响了电机的初始化，电机也是有状态机的
-			if(r_page_servos[0]<900) {r_page_servos[0]=900;}
-		}
-		
-		if(outputs[5]>0.05f){
-			r_page_servos[1]=r_page_servos[1] * outputs[5];//2号电机的故障率
-			//实测 电机在解锁后不能低于900，故障输出低于900 故障结束后电机没法再成功转起，应该是影响了电机的初始化，电机也是有状态机的
-			if(r_page_servos[1]<900) {r_page_servos[1]=900;}
-		}
-
-		if(outputs[6]>0.05f){
-			r_page_servos[2]=r_page_servos[2] * outputs[6];//3号电机的故障率
-			//实测 电机在解锁后不能低于900，故障输出低于900 故障结束后电机没法再成功转起，应该是影响了电机的初始化，电机也是有状态机的
-			if(r_page_servos[2]<900) {r_page_servos[2]=900;}
-		}
-
-		if(outputs[7]>0.05f){
-			r_page_servos[3]=r_page_servos[3] * outputs[7];//4号电机的故障率
-			//实测 电机在解锁后不能低于900，故障输出低于900 故障结束后电机没法再成功转起，应该是影响了电机的初始化，电机也是有状态机的
-			if(r_page_servos[3]<900) {r_page_servos[3]=900;}
-		}
-		}
-		
-
-
 		/* clamp unused outputs to zero */
 		for (unsigned i = mixed; i < PX4IO_SERVO_COUNT; i++) {
 			r_page_servos[i] = 0;
