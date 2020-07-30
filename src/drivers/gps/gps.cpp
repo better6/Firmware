@@ -785,7 +785,8 @@ GPS::run()
 					_rate_rtcm_injection = 0.0f;
 				}
 			}
-
+		//这里限制了此代码只能用于解超RTK，无法进入普通ublox的gps
+		//如果使用普通gps  只需要取消下面的强制进入模式
 			_mode=GPS_DRIVER_MODE_ASHTECH;
 			if (_mode_auto) {
 				switch (_mode) {
