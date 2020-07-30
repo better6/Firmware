@@ -179,13 +179,13 @@ RTL::set_rtl_item()
 
 			// use home yaw if close to home
 			/* check if we are pretty close to home already */
-			// if (home_dist < _param_rtl_min_dist.get()) {
-			// 	_mission_item.yaw = home.yaw;
+			if (home_dist < _param_rtl_min_dist.get()) {
+				_mission_item.yaw = home.yaw;
 
-			// } else {
-			// 	// use current heading to home
-			// 	//_mission_item.yaw = get_bearing_to_next_waypoint(gpos.lat, gpos.lon, home.lat, home.lon);
-			// }
+			} else {
+				// use current heading to home
+				_mission_item.yaw = get_bearing_to_next_waypoint(gpos.lat, gpos.lon, home.lat, home.lon);
+			}
 
 			_mission_item.acceptance_radius = _navigator->get_acceptance_radius();
 			_mission_item.time_inside = 0.0f;
@@ -211,14 +211,14 @@ RTL::set_rtl_item()
 			_mission_item.altitude_is_relative = false;
 
 			// except for vtol which might be still off here and should point towards this location
-			//const float d_current = get_distance_to_next_waypoint(gpos.lat, gpos.lon, _mission_item.lat, _mission_item.lon);
+			const float d_current = get_distance_to_next_waypoint(gpos.lat, gpos.lon, _mission_item.lat, _mission_item.lon);
 
-			// if (_navigator->get_vstatus()->is_vtol && (d_current > _navigator->get_acceptance_radius())) {
-			// 	_mission_item.yaw = get_bearing_to_next_waypoint(gpos.lat, gpos.lon, _mission_item.lat, _mission_item.lon);
+			if (_navigator->get_vstatus()->is_vtol && (d_current > _navigator->get_acceptance_radius())) {
+				_mission_item.yaw = get_bearing_to_next_waypoint(gpos.lat, gpos.lon, _mission_item.lat, _mission_item.lon);
 
-			// } else {
-			// 	_mission_item.yaw = home.yaw;
-			// }
+			} else {
+				_mission_item.yaw = home.yaw;
+			}
 
 			_mission_item.acceptance_radius = _navigator->get_acceptance_radius();
 			_mission_item.time_inside = 0.0f;
@@ -241,7 +241,7 @@ RTL::set_rtl_item()
 			_mission_item.lon = home.lon;
 			_mission_item.altitude = loiter_altitude;
 			_mission_item.altitude_is_relative = false;
-			//_mission_item.yaw = home.yaw;
+			_mission_item.yaw = home.yaw;
 			_mission_item.loiter_radius = _navigator->get_loiter_radius();
 			_mission_item.acceptance_radius = _navigator->get_acceptance_radius();
 			_mission_item.time_inside = max(_param_land_delay.get(), 0.0f);
@@ -268,7 +268,7 @@ RTL::set_rtl_item()
 			_mission_item.nav_cmd = NAV_CMD_LAND;
 			_mission_item.lat = home.lat;
 			_mission_item.lon = home.lon;
-			//_mission_item.yaw = home.yaw;
+			_mission_item.yaw = home.yaw;
 			_mission_item.altitude = home.alt;
 			_mission_item.altitude_is_relative = false;
 			_mission_item.acceptance_radius = _navigator->get_acceptance_radius();

@@ -1255,12 +1255,9 @@ Mission::heading_sp_update()
 
 				/* always keep the back of the rotary wing pointing towards home */
 				if (_param_yawmode.get() == MISSION_YAWMODE_BACK_TO_HOME) {
-					//限制飞机在mission过程中航向保持不变，避免因航向的变换导致飞机姿态的不稳！需要配合设置参数YAWMODE=3共同使用
-					//_mission_item.yaw = wrap_pi(yaw + M_PI_F);
-					//pos_sp_triplet->current.yaw = _mission_item.yaw;
-					//下面这一句屏蔽了效果也是一样的，飞机也会保持航向，但是因为担心yaw被误赋值 所以这里还是保留NAN
-					_waypoint_yaw_reached=true;//不做航向的转动 不做航向是否到达的判断，这句增加了隐患，MIS_YAWMODE修改成其他模式时是否受此影响
-					pos_sp_triplet->current.yaw = NAN;//限制飞机在mission飞行中航向不发生任何变化，避免因航向的变换，引起飞机姿态的抖动！
+					_mission_item.yaw = wrap_pi(yaw + M_PI_F);
+					pos_sp_triplet->current.yaw = _mission_item.yaw;
+
 				} else if (_param_yawmode.get() == MISSION_YAWMODE_FRONT_TO_WAYPOINT
 					   && _navigator->get_vroi().mode == vehicle_roi_s::ROI_WPNEXT && !_param_mnt_yaw_ctl.get()) {
 					/* if yaw control for the mount is disabled and we have a valid ROI that points to the next
