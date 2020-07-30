@@ -281,10 +281,7 @@ MavlinkMissionManager::send_mission_current(uint16_t seq)
 
 		wpc.seq = seq;
 
-		//这是mavlink相关mission的内容，在noboard模式下无需发送
-        if(_mavlink->get_mode() != Mavlink::MAVLINK_MODE_ONBOARD){ //调试,这一句用来禁止下面这个在onboard模式上发送
-            mavlink_msg_mission_current_send_struct(_mavlink->get_channel(), &wpc);
-        }
+		mavlink_msg_mission_current_send_struct(_mavlink->get_channel(), &wpc);
 
 	} else if (seq == 0 && item_count == 0) {
 		/* don't broadcast if no WPs */
