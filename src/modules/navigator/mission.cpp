@@ -124,6 +124,8 @@ Mission::on_inactive()
 		/* On init let's check the mission, maybe there is already one available. */
 		check_mission_valid(false);
 
+		_formation_sub = orb_subscribe(ORB_ID(formation_type));
+
 		_inited = true;
 	}
 
@@ -215,8 +217,17 @@ Mission::on_active()
 		set_mission_items();
 	}
 
+	//订阅来自地面站的“下一步”按键，判断是否继续航点
+	bool updated=false;
+	orb_check(_formation_sub, &updated);
+	if (updated) {
+		orb_copy(ORB_ID(formation_type), _formation_sub, &_formation);
+	}
+
 	/* lets check if we reached the current mission item */
-	if (_mission_type != MISSION_TYPE_NONE && is_mission_item_reached()) {
+	if (_mission_type != MISSION_TYPE_NONE && is_mission_item_reached()&&(_formation.start_end==8)) {
+
+		_formation.start_end=0;
 		/* If we just completed a takeoff which was inserted before the right waypoint,
 		   there is no need to report that we reached it because we didn't. */
 		if (_work_item_type != WORK_ITEM_TYPE_TAKEOFF) {

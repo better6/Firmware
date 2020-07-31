@@ -60,6 +60,7 @@
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vehicle_roi.h>
+#include <uORB/topics/formation_type.h>
 #include <uORB/uORB.h>
 
 class Navigator;
@@ -290,4 +291,7 @@ private:
 
 	uint8_t _mission_execution_mode{mission_result_s::MISSION_EXECUTION_MODE_NORMAL};	/**< the current mode of how the mission is executed,look at mission_result.msg for the definition */
 	bool _execution_mode_changed{false};
+	int		_formation_sub{-1};	
+	formation_type_s _formation={};
+
 };
